@@ -1,0 +1,290 @@
+@import url('https://fonts.googleapis.com/css2?family=Motiva+Sans:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ========================================
+   STEAM-STYLE DESIGN TOKENS
+======================================== */
+:root {
+  /* Colors - Steam Dark Theme */
+  --steam-dark-bg: #1b2838;
+  --steam-darker-bg: #171a21;
+  --steam-card-bg: #16202d;
+  --steam-panel-bg: #2a475e;
+  --steam-highlight: #c7d5e0;
+  --steam-text: #acb2b8;
+  --steam-text-dim: #7a9bb5;
+  --steam-blue: #66c0f4;
+  --steam-blue-hover: #4fa3d9;
+  --steam-blue-dark: #1a9fff;
+  --steam-blue-btn: #4d8eb2;
+  --steam-green: #4c6b22;
+  --steam-green-bright: #a4d007;
+  --steam-orange: #e87c23;
+  --steam-red: #e2001a;
+  --steam-gold: #f6c745;
+  --steam-border: #2a3f5a;
+  --steam-border-light: #3d5a73;
+  --steam-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Gradients */
+  --gradient-header: linear-gradient(135deg, #1b2838 0%, #2a475e 100%);
+  --gradient-hero: linear-gradient(180deg, transparent 40%, rgba(27, 40, 56, 0.9) 80%, #1b2838 100%);
+  --gradient-card: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.8) 100%);
+  --gradient-blue: linear-gradient(135deg, #4d7ea8, #66c0f4);
+  --gradient-discount: linear-gradient(135deg, #4c6b22, #5c7a28);
+
+  /* Spacing */
+  --nav-height: 52px;
+  --topbar-height: 36px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-med: 0.25s ease;
+  --transition-slow: 0.4s ease;
+
+  /* Shadows */
+  --shadow-card: 0 4px 20px rgba(0,0,0,0.5);
+  --shadow-glow-blue: 0 0 20px rgba(102,192,244,0.3);
+  --shadow-glow-green: 0 0 20px rgba(164,208,7,0.3);
+}
+
+/* ========================================
+   RESET & BASE
+======================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', 'Motiva Sans', system-ui, sans-serif;
+  background-color: var(--steam-darker-bg);
+  color: var(--steam-text);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+}
+
+a {
+  color: var(--steam-blue);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+a:hover { color: var(--steam-blue-hover); }
+
+button {
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+h1, h2, h3, h4, h5 {
+  color: var(--steam-highlight);
+  font-weight: 600;
+}
+
+/* ========================================
+   SCROLLBAR
+======================================== */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--steam-darker-bg); }
+::-webkit-scrollbar-thumb { background: var(--steam-panel-bg); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--steam-blue-btn); }
+
+/* ========================================
+   LAYOUT UTILITIES
+======================================== */
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.page-wrapper {
+  padding-top: calc(var(--topbar-height) + var(--nav-height));
+  min-height: 100vh;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--steam-highlight);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--steam-border);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-title .view-more {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--steam-blue);
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  padding: 4px 10px;
+  border: 1px solid var(--steam-border);
+  border-radius: 2px;
+}
+.section-title .view-more:hover {
+  color: var(--steam-highlight);
+  border-color: var(--steam-blue);
+  background: rgba(102,192,244,0.1);
+}
+
+/* ========================================
+   BUTTONS
+======================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: linear-gradient(to bottom, #4d8eb2, #3a7a9c);
+  color: #c7d5e0;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+.btn-primary:hover {
+  background: linear-gradient(to bottom, #66b3d4, #4d9abf);
+  color: #fff;
+}
+
+.btn-green {
+  background: linear-gradient(to bottom, #75b022, #5a8a18);
+  color: #d4e157;
+}
+.btn-green:hover {
+  background: linear-gradient(to bottom, #8bc34a, #6ca028);
+  color: #fff;
+}
+
+.btn-secondary {
+  background: rgba(255,255,255,0.05);
+  color: var(--steam-text);
+  border: 1px solid var(--steam-border);
+}
+.btn-secondary:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--steam-highlight);
+  border-color: var(--steam-blue);
+}
+
+/* ========================================
+   TAGS & BADGES
+======================================== */
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tag-new { background: var(--steam-blue); color: #fff; }
+.tag-sale { background: var(--steam-green-bright); color: #1a2a00; }
+.tag-hot { background: var(--steam-orange); color: #fff; }
+.tag-featured { background: var(--steam-gold); color: #1a1200; }
+
+.discount-badge {
+  background: var(--steam-green-bright);
+  color: #1a2a00;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 4px 10px;
+  border-radius: 3px;
+}
+
+/* ========================================
+   PRICE DISPLAY
+======================================== */
+.price-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.price-original {
+  color: var(--steam-text-dim);
+  text-decoration: line-through;
+  font-size: 12px;
+}
+
+.price-final {
+  color: var(--steam-green-bright);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.price-free {
+  color: var(--steam-green-bright);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* ========================================
+   LOADING & ANIMATION
+======================================== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(102,192,244,0.2); }
+  50% { box-shadow: 0 0 20px rgba(102,192,244,0.5); }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #1e2d3d 25%, #243545 50%, #1e2d3d 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}

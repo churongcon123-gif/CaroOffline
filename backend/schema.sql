@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    elo INT DEFAULT 1200,
+    matches_played INT DEFAULT 0,
+    wins INT DEFAULT 0,
+    losses INT DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
