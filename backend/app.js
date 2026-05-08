@@ -19,6 +19,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'CaroOnline Backend is running' });
 });
 
+// Thêm route mặc định để khi truy cập link gốc không bị báo lỗi "Cannot GET /"
+app.get('/', (req, res) => {
+  res.send('<h1>CaroOnline Backend is successfully running! 🚀</h1><p>API is listening at /api</p>');
+});
+
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/game', require('./routes/gameRoutes'));
 app.use('/api/leaderboard', require('./routes/leaderboardRoutes'));
