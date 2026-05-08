@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api/game';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/game';
 
 /**
  * Gọi API cập nhật Elo sau ván chơi offline
@@ -28,7 +28,7 @@ export const updateEloApi = async (token, newElo, won) => {
  */
 export const getLeaderboardApi = async (limit = 50) => {
   try {
-    const response = await axios.get(`http://localhost:5000/api/leaderboard?limit=${limit}`);
+    const response = await axios.get(`${import.meta.env.VITE_API_URL?.replace('/api/game', '') || 'http://localhost:5000'}/api/leaderboard?limit=${limit}`);
     return response.data;
   } catch (error) {
     throw error.response?.data || { error: 'Failed to fetch leaderboard' };
