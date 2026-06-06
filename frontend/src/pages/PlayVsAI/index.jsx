@@ -190,9 +190,9 @@ const PlayVsAI = () => {
       </div>
 
       {/* Main */}
-      <div style={{ display: 'flex', gap: '20px' }}>
+      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
         {/* Board area */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '100%' }}>
           {/* Status + timer bar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '10px', width: '100%', justifyContent: 'space-between' }}>
             <div style={{ fontSize: '15px', fontWeight: 'bold', color: statusMsg.color }}>
@@ -211,8 +211,10 @@ const PlayVsAI = () => {
             )}
           </div>
 
-          <Board board={board} onCellClick={handleCellClick}
-            disabled={over || turn !== 'player' || isAIThinking} winCells={winCells} />
+          <div style={{ maxWidth: '100%', overflowX: 'auto', width: '100%', display: 'flex', justifyContent: 'center', paddingBottom: '10px' }}>
+            <Board board={board} onCellClick={handleCellClick}
+              disabled={over || turn !== 'player' || isAIThinking} winCells={winCells} />
+          </div>
         </div>
 
         {/* Side panel */}

@@ -237,10 +237,10 @@ const GameRoom = () => {
       </div>
 
       {/* Main Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'min-content 280px', gap: '16px' }}>
+      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
 
         {/* Left: Board */}
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: '1 1 450px', maxWidth: '100%', alignItems: 'center' }}>
 
           {/* Turn / Result indicator */}
           <div style={{ marginBottom: '10px', minHeight: '38px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
@@ -268,12 +268,14 @@ const GameRoom = () => {
             )}
           </div>
 
-          <Board
-            board={room.board}
-            onCellClick={handleCellClick}
-            disabled={over || room.status !== 'playing' || !isMyTurn || amISpectator}
-            winCells={room.winningCells || []}
-          />
+          <div style={{ maxWidth: '100%', overflowX: 'auto', width: '100%', display: 'flex', justifyContent: 'center', paddingBottom: '10px' }}>
+            <Board
+              board={room.board}
+              onCellClick={handleCellClick}
+              disabled={over || room.status !== 'playing' || !isMyTurn || amISpectator}
+              winCells={room.winningCells || []}
+            />
+          </div>
 
           {/* Rematch */}
           {over && !amISpectator && (
@@ -303,7 +305,7 @@ const GameRoom = () => {
         </div>
 
         {/* Right: Chat */}
-        <div style={{ background: 'var(--steam-card-bg)', borderRadius: '4px', border: '1px solid var(--steam-border)', display: 'flex', flexDirection: 'column', height: '620px' }}>
+        <div style={{ flex: '1 1 280px', minWidth: '280px', background: 'var(--steam-card-bg)', borderRadius: '4px', border: '1px solid var(--steam-border)', display: 'flex', flexDirection: 'column', height: '620px' }}>
           <div style={{ padding: '10px 14px', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid var(--steam-border)', fontWeight: 'bold', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             💬 Chat phòng
             {room.spectators?.length > 0 && (
