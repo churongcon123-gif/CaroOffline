@@ -36,9 +36,9 @@ const Home = () => {
           <p style={{ margin: 0, fontSize: '13px', color: 'var(--steam-text-dim)', lineHeight: '1.6' }}>
             Tạo phòng hoặc tham gia phòng để đấu với người chơi khác theo thời gian thực. Điểm Elo được cập nhật sau mỗi trận.
           </p>
-          <div className="btn btn-primary" style={{ textAlign: 'center', marginTop: 'auto', opacity: 0.5, cursor: 'not-allowed' }}>
-            🚧 Sắp ra mắt
-          </div>
+          <Link to={user ? '/lobby' : '/login'} className="btn btn-primary" style={{ textAlign: 'center', marginTop: 'auto' }}>
+            {user ? 'Vào Lobby' : 'Đăng nhập để chơi'}
+          </Link>
         </div>
 
         {/* vs AI */}

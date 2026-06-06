@@ -7,6 +7,8 @@ import GameRoom from './pages/GameRoom';
 import PlayVsAI from './pages/PlayVsAI';
 import PlayLocal from './pages/PlayLocal';
 import Leaderboard from './pages/Leaderboard';
+import Lobby from './pages/Lobby';
+import Profile from './pages/Profile';
 import useAuthStore from './states/authStore';
 
 const App = () => {
@@ -30,10 +32,14 @@ const App = () => {
             onMouseEnter={e => e.currentTarget.style.color = 'var(--steam-highlight)'}
             onMouseLeave={e => e.currentTarget.style.color = 'var(--steam-text-dim)'}
           >🏆 Xếp hạng</Link>
+          <Link to="/lobby" style={{ color: 'var(--steam-text-dim)', fontSize: '13px', marginRight: '16px', transition: 'color 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--steam-highlight)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--steam-text-dim)'}
+          >🌐 Online</Link>
           {user ? (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '16px' }}>
               <span style={{ fontSize: '13px' }}>
-                Welcome, <span style={{ color: 'var(--steam-blue)', fontWeight: 'bold' }}>{user.username}</span> (Elo: {user.elo})
+                Welcome, <Link to="/profile" style={{ color: 'var(--steam-blue)', fontWeight: 'bold' }}>{user.username}</Link> (Elo: {user.elo})
               </span>
               <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '12px' }}>Logout</button>
             </span>
@@ -52,6 +58,8 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/lobby" element={<Lobby />} />
+          <Route path="/profile" element={<Profile />} />
 
           <Route path="/room/:id" element={<GameRoom />} />
           <Route path="/play-ai" element={<PlayVsAI />} />
