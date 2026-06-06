@@ -24,13 +24,26 @@ const Leaderboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [myRank, setMyRank] = useState(null);
+  
+  // Phân trang
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [globalMaxElo, setGlobalMaxElo] = useState(2000);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
         setLoading(true);
-        const res = await getLeaderboardApi(50);
+        const res = await getLeaderboardApi(page, 10);
         setData(res.leaderboard);
+        setTotalPages(res.totalPages || 1);
+        setTotalUsers(res.totalUsers || 0);
+
+        if (page === 1 && res.leaderboard.length > 0) {
+          setGlobalMaxElo(res.leaderboard[0].elo || 2000);
+        }
+
         if (user) {
           const found = res.leaderboard.find(p => p.username === user.username);
           if (found) setMyRank(found);
@@ -42,7 +55,7 @@ const Leaderboard = () => {
       }
     };
     fetchLeaderboard();
-  }, [user]);
+  }, [user, page]);
 
   return (
     <div className="container fade-in" style={{ padding: '32px 16px', maxWidth: '900px', margin: '0 auto' }}>
@@ -59,7 +72,7 @@ const Leaderboard = () => {
           Bảng Xếp Hạng
         </h1>
         <p style={{ color: 'var(--steam-text-dim)', fontSize: '14px' }}>
-          Top người chơi theo điểm Elo — đánh với AI để leo hạng!
+          Xem danh sách kỳ thủ hàng đầu — thi đấu trực tuyến để tích lũy Elo!
         </p>
       </div>
 
@@ -107,124 +120,177 @@ const Leaderboard = () => {
           ⚠️ {error}
         </div>
       ) : (
-        <div style={{ background: 'var(--steam-card-bg)', borderRadius: '8px', border: '1px solid var(--steam-border)', overflow: 'hidden' }}>
-          {/* Table header */}
-          <div style={{
-            display: 'grid', gridTemplateColumns: '60px 1fr 100px 120px 120px 90px',
-            padding: '10px 20px', background: 'rgba(42,71,94,0.6)',
-            borderBottom: '1px solid var(--steam-border)',
-            fontSize: '11px', fontWeight: '700', color: 'var(--steam-text-dim)',
-            textTransform: 'uppercase', letterSpacing: '0.08em',
-          }}>
-            <span>Hạng</span>
-            <span>Người chơi</span>
-            <span style={{ textAlign: 'right' }}>Elo</span>
-            <span style={{ textAlign: 'center' }}>Thắng / Thua</span>
-            <span style={{ textAlign: 'center' }}>Số trận</span>
-            <span style={{ textAlign: 'right' }}>Tỉ lệ thắng</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ background: 'var(--steam-card-bg)', borderRadius: '8px', border: '1px solid var(--steam-border)', overflow: 'hidden' }}>
+            {/* Table header */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: '60px 1fr 120px 120px 120px 90px',
+              padding: '10px 20px', background: 'rgba(42,71,94,0.6)',
+              borderBottom: '1px solid var(--steam-border)',
+              fontSize: '11px', fontWeight: '700', color: 'var(--steam-text-dim)',
+              textTransform: 'uppercase', letterSpacing: '0.08em',
+            }}>
+              <span>Hạng</span>
+              <span>Người chơi</span>
+              <span style={{ textAlign: 'right', paddingRight: '20px' }}>Elo</span>
+              <span style={{ textAlign: 'center' }}>Thắng / Thua</span>
+              <span style={{ textAlign: 'center' }}>Số trận</span>
+              <span style={{ textAlign: 'right' }}>Tỉ lệ thắng</span>
+            </div>
+
+            {/* Rows */}
+            {data.map((player, idx) => {
+              const rank = Number(player.rank);
+              const rs = RANK_STYLES[rank];
+              const badge = getEloBadge(player.elo);
+              const isMe = user && player.username === user.username;
+              const winRate = Number(player.win_rate);
+
+              // Tỉ lệ Elo so với Elo cao nhất
+              const eloBarWidth = Math.max(10, Math.min(100, (player.elo / globalMaxElo) * 100));
+
+              return (
+                <div
+                  key={player.username}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '60px 1fr 120px 120px 120px 90px',
+                    padding: '14px 20px',
+                    alignItems: 'center',
+                    borderBottom: idx < data.length - 1 ? '1px solid rgba(42,63,90,0.5)' : 'none',
+                    background: isMe
+                      ? 'rgba(102,192,244,0.06)'
+                      : rank <= 3
+                      ? `rgba(0,0,0,0.15)`
+                      : 'transparent',
+                    transition: 'background 0.15s',
+                    boxShadow: isMe ? 'inset 3px 0 0 var(--steam-blue)' : rank <= 3 ? `inset 3px 0 0 ${rs?.glow?.replace('rgba', 'rgb')?.replace(',0.4)', ')').replace(',0.3)', ')').replace(',0.35)', ')')}` : 'none',
+                  }}
+                  onMouseEnter={e => { if (!isMe) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = isMe ? 'rgba(102,192,244,0.06)' : rank <= 3 ? 'rgba(0,0,0,0.15)' : 'transparent'; }}
+                >
+                  {/* Rank */}
+                  <div>
+                    {rs ? (
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        width: 32, height: 32, borderRadius: '50%',
+                        background: rs.bg, color: rs.color,
+                        fontWeight: '900', fontSize: '13px',
+                        boxShadow: `0 0 12px ${rs.glow}`,
+                      }}>
+                        {rs.icon}
+                      </div>
+                    ) : (
+                      <span style={{ color: 'var(--steam-text-dim)', fontWeight: '600', fontSize: '15px' }}>
+                        #{rank}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Username + badge */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <div>
+                      <div style={{
+                        fontWeight: isMe ? '700' : '500',
+                        color: isMe ? 'var(--steam-blue)' : 'var(--steam-highlight)',
+                        fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      }}>
+                        {player.username}{isMe && <span style={{ color: 'var(--steam-text-dim)', fontWeight: 400, fontSize: '12px' }}> (bạn)</span>}
+                      </div>
+                      <span style={{
+                        display: 'inline-block', fontSize: '10px', fontWeight: '700',
+                        padding: '1px 7px', borderRadius: '20px', marginTop: '2px',
+                        background: badge.bg, color: badge.color, border: `1px solid ${badge.color}44`,
+                      }}>
+                        {badge.label}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Elo & Elo Bar */}
+                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', paddingRight: '20px' }}>
+                    <div style={{ fontWeight: '900', fontSize: '18px', color: '#c6a614' }}>
+                      {player.elo}
+                    </div>
+                    {/* Elo progress bar relative to max Elo */}
+                    <div style={{ width: '80px', height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', marginTop: '4px', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${eloBarWidth}%`,
+                        background: 'linear-gradient(90deg, #c6a614 0%, #f0c040 100%)',
+                        borderRadius: '2px',
+                        transition: 'width 0.6s ease',
+                      }} />
+                    </div>
+                  </div>
+
+                  {/* W/L */}
+                  <div style={{ textAlign: 'center', fontSize: '13px' }}>
+                    <span style={{ color: 'var(--steam-green-bright)', fontWeight: '700' }}>{player.wins}W</span>
+                    {' / '}
+                    <span style={{ color: '#e84c3d', fontWeight: '700' }}>{player.losses}L</span>
+                  </div>
+
+                  {/* Matches */}
+                  <div style={{ textAlign: 'center', color: 'var(--steam-text-dim)', fontSize: '13px' }}>
+                    {player.matches_played}
+                  </div>
+
+                  {/* Win rate */}
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontWeight: '700', fontSize: '14px', color: winRate >= 60 ? 'var(--steam-green-bright)' : winRate >= 40 ? '#f4b942' : '#e84c3d' }}>
+                      {winRate}%
+                    </div>
+                    {/* Mini win rate bar */}
+                    <div style={{ height: '3px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', marginTop: '4px' }}>
+                      <div style={{
+                        height: '100%', width: `${winRate}%`, borderRadius: '2px',
+                        background: winRate >= 60 ? 'var(--steam-green-bright)' : winRate >= 40 ? '#f4b942' : '#e84c3d',
+                        transition: 'width 0.6s ease',
+                      }} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          {/* Rows */}
-          {data.map((player, idx) => {
-            const rank = Number(player.rank);
-            const rs = RANK_STYLES[rank];
-            const badge = getEloBadge(player.elo);
-            const isMe = user && player.username === user.username;
-            const winRate = Number(player.win_rate);
-
-            return (
-              <div
-                key={player.username}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '60px 1fr 100px 120px 120px 90px',
-                  padding: '14px 20px',
-                  alignItems: 'center',
-                  borderBottom: idx < data.length - 1 ? '1px solid rgba(42,63,90,0.5)' : 'none',
-                  background: isMe
-                    ? 'rgba(102,192,244,0.06)'
-                    : rank <= 3
-                    ? `rgba(0,0,0,0.15)`
-                    : 'transparent',
-                  transition: 'background 0.15s',
-                  boxShadow: isMe ? 'inset 3px 0 0 var(--steam-blue)' : rank <= 3 ? `inset 3px 0 0 ${rs?.glow?.replace('rgba', 'rgb')?.replace(',0.4)', ')').replace(',0.3)', ')').replace(',0.35)', ')')}` : 'none',
-                }}
-                onMouseEnter={e => { if (!isMe) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = isMe ? 'rgba(102,192,244,0.06)' : rank <= 3 ? 'rgba(0,0,0,0.15)' : 'transparent'; }}
+          {/* Sleek Pagination Controls */}
+          {totalPages > 1 && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '12px 16px',
+              background: 'var(--steam-card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--steam-border)',
+              marginTop: '4px'
+            }}>
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="btn btn-secondary"
+                style={{ opacity: page === 1 ? 0.4 : 1, padding: '6px 12px', fontSize: '12px' }}
               >
-                {/* Rank */}
-                <div>
-                  {rs ? (
-                    <div style={{
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      width: 32, height: 32, borderRadius: '50%',
-                      background: rs.bg, color: rs.color,
-                      fontWeight: '900', fontSize: '13px',
-                      boxShadow: `0 0 12px ${rs.glow}`,
-                    }}>
-                      {rs.icon}
-                    </div>
-                  ) : (
-                    <span style={{ color: 'var(--steam-text-dim)', fontWeight: '600', fontSize: '15px' }}>
-                      #{rank}
-                    </span>
-                  )}
-                </div>
+                ◀ Trang trước
+              </button>
 
-                {/* Username + badge */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                  <div>
-                    <div style={{
-                      fontWeight: isMe ? '700' : '500',
-                      color: isMe ? 'var(--steam-blue)' : 'var(--steam-highlight)',
-                      fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                    }}>
-                      {player.username}{isMe && <span style={{ color: 'var(--steam-text-dim)', fontWeight: 400, fontSize: '12px' }}> (bạn)</span>}
-                    </div>
-                    <span style={{
-                      display: 'inline-block', fontSize: '10px', fontWeight: '700',
-                      padding: '1px 7px', borderRadius: '20px', marginTop: '2px',
-                      background: badge.bg, color: badge.color, border: `1px solid ${badge.color}44`,
-                    }}>
-                      {badge.label}
-                    </span>
-                  </div>
-                </div>
+              <span style={{ fontSize: '13px', color: 'var(--steam-text-dim)' }}>
+                Trang <strong style={{ color: 'var(--steam-highlight)' }}>{page}</strong> / <strong>{totalPages}</strong> (Tổng cộng {totalUsers} người chơi)
+              </span>
 
-                {/* Elo */}
-                <div style={{ textAlign: 'right', fontWeight: '900', fontSize: '18px', color: '#c6a614' }}>
-                  {player.elo}
-                </div>
-
-                {/* W/L */}
-                <div style={{ textAlign: 'center', fontSize: '13px' }}>
-                  <span style={{ color: 'var(--steam-green-bright)', fontWeight: '700' }}>{player.wins}W</span>
-                  {' / '}
-                  <span style={{ color: '#e84c3d', fontWeight: '700' }}>{player.losses}L</span>
-                </div>
-
-                {/* Matches */}
-                <div style={{ textAlign: 'center', color: 'var(--steam-text-dim)', fontSize: '13px' }}>
-                  {player.matches_played}
-                </div>
-
-                {/* Win rate */}
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: '700', fontSize: '14px', color: winRate >= 60 ? 'var(--steam-green-bright)' : winRate >= 40 ? '#f4b942' : '#e84c3d' }}>
-                    {winRate}%
-                  </div>
-                  {/* Mini bar */}
-                  <div style={{ height: '3px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', marginTop: '4px' }}>
-                    <div style={{
-                      height: '100%', width: `${winRate}%`, borderRadius: '2px',
-                      background: winRate >= 60 ? 'var(--steam-green-bright)' : winRate >= 40 ? '#f4b942' : '#e84c3d',
-                      transition: 'width 0.6s ease',
-                    }} />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="btn btn-secondary"
+                style={{ opacity: page === totalPages ? 0.4 : 1, padding: '6px 12px', fontSize: '12px' }}
+              >
+                Trang sau ▶
+              </button>
+            </div>
+          )}
         </div>
       )}
 

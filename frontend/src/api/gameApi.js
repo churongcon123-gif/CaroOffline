@@ -66,12 +66,11 @@ export const updateEloApi = async (token, newElo, won) => {
  * @param {number} limit - Số người tối đa muốn lấy (mặc định 50, tối đa 100)
  * @returns {Promise<{ leaderboard: Array }>}
  */
-export const getLeaderboardApi = async (limit = 50) => {
+export const getLeaderboardApi = async (page = 1, limit = 10) => {
   try {
-    // URL leaderboard cũng cần detect môi trường riêng (khác prefix /game)
     const url = import.meta.env.VITE_API_URL
-      ? `${import.meta.env.VITE_API_URL}/leaderboard?limit=${limit}`
-      : `http://localhost:5000/api/leaderboard?limit=${limit}`;
+      ? `${import.meta.env.VITE_API_URL}/leaderboard?page=${page}&limit=${limit}`
+      : `http://localhost:5000/api/leaderboard?page=${page}&limit=${limit}`;
 
     const response = await axios.get(url);
     return response.data;
