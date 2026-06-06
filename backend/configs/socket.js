@@ -23,10 +23,12 @@ module.exports = (server) => {
       const newRoom = {
         id: roomId,
         players: [user],
-        board: Array(20).fill(null).map(() => Array(20).fill(null)),
+        board: Array(15).fill(null).map(() => Array(15).fill(null)),
         turn: user.username, // first player goes first
         status: 'waiting', // 'waiting', 'playing', 'finished'
-        messages: []
+        messages: [],
+        winningCells: null,
+        turnStartedAt: null,
       };
       rooms.set(roomId, newRoom);
       

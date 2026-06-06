@@ -94,7 +94,7 @@ const Lobby = () => {
             <li>Wait for an opponent to join.</li>
             <li>First player to get 5 pieces in a row (horizontally, vertically, or diagonally) wins.</li>
             <li>No "blocked on both ends" rule applied.</li>
-            <li>Board size is 20x20.</li>
+            <li>Board size là 15×15.</li>
           </ul>
         </div>
 
