@@ -26,6 +26,46 @@ const TimerRing = ({ timeLeft, total = TURN_TIME, color }) => {
   );
 };
 
+// ── Confetti effect on win ──────────────────────────────────────
+const Confetti = () => {
+  const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'];
+  const confettiPieces = Array.from({ length: 80 }).map((_, i) => {
+    const left = Math.random() * 100;
+    const delay = Math.random() * 4;
+    const duration = 2 + Math.random() * 3;
+    const size = 6 + Math.random() * 8;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const rotate = Math.random() * 360;
+    
+    return (
+      <div
+        key={i}
+        style={{
+          position: 'absolute',
+          top: '-20px',
+          left: `${left}%`,
+          width: `${size}px`,
+          height: `${size * 0.7}px`,
+          backgroundColor: color,
+          opacity: 0.8,
+          borderRadius: '50%',
+          transform: `rotate(${rotate}deg)`,
+          animation: `fall ${duration}s linear infinite`,
+          animationDelay: `${delay}s`,
+          zIndex: 1000,
+          pointerEvents: 'none'
+        }}
+      />
+    );
+  });
+
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 9999, overflow: 'hidden' }}>
+      {confettiPieces}
+    </div>
+  );
+};
+
 const GameRoom = () => {
   const { id } = useParams();
   const { user, updateUserElo } = useAuthStore();
@@ -160,6 +200,7 @@ const GameRoom = () => {
 
   return (
     <div className="container fade-in" style={{ padding: '20px 16px' }}>
+      {over && room.winner === user.username && <Confetti />}
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', background: 'var(--steam-card-bg)', padding: '12px 20px', borderRadius: '4px', border: '1px solid var(--steam-border)' }}>
