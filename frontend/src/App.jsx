@@ -10,6 +10,7 @@ import Leaderboard from './pages/Leaderboard';
 import Lobby from './pages/Lobby';
 import Profile from './pages/Profile';
 import useAuthStore from './states/authStore';
+import { ToastContainer } from './components/Toast';
 
 const App = () => {
   const { user, logout } = useAuthStore();
@@ -22,6 +23,7 @@ const App = () => {
 
   return (
     <div className="page-wrapper">
+      <ToastContainer />
       <header style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 'var(--nav-height)', background: 'var(--gradient-header)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', zIndex: 1000, borderBottom: '1px solid var(--steam-border)' }}>
         <Link to="/" style={{ color: 'var(--steam-highlight)', fontWeight: 'bold', fontSize: '18px' }}>
           CaroOnline

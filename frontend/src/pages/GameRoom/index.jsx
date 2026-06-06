@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { socket } from '../../sockets/socket';
 import useAuthStore from '../../states/authStore';
+import useToastStore from '../../states/toastStore';
 import Board from '../../components/Board';
 import { getWinningCells } from '../../utils/checkWinner';
 
@@ -69,6 +70,7 @@ const Confetti = () => {
 const GameRoom = () => {
   const { id } = useParams();
   const { user, updateUserElo } = useAuthStore();
+  const { addToast } = useToastStore();
   const navigate = useNavigate();
 
   const [room, setRoom] = useState(null);
@@ -115,7 +117,7 @@ const GameRoom = () => {
     });
 
     socket.on('join_room_error', (msg) => {
-      alert(msg);
+      addToast(msg, 'error');
       navigate('/lobby');
     });
 
