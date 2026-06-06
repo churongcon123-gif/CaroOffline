@@ -47,19 +47,19 @@ const PlayVsAI = () => {
   const { user, token, updateUserElo } = useAuthStore();
   const navigate = useNavigate();
 
-  const [board, setBoard]           = useState(emptyBoard);
-  const [turn, setTurn]             = useState('player');
-  const [status, setStatus]         = useState('playing'); // 'playing'|'player_win'|'ai_win'|'timeout'
-  const [winCells, setWinCells]     = useState([]);
+  const [board, setBoard] = useState(emptyBoard);
+  const [turn, setTurn] = useState('player');
+  const [status, setStatus] = useState('playing'); // 'playing'|'player_win'|'ai_win'|'timeout'
+  const [winCells, setWinCells] = useState([]);
   const [isAIThinking, setIsAIThinking] = useState(false);
-  const [eloChange, setEloChange]   = useState(null);
-  const [isSaving, setIsSaving]     = useState(false);
-  const [moveCount, setMoveCount]   = useState(0);   // ← số nước đi
-  const [timeLeft, setTimeLeft]     = useState(TURN_TIME); // ← đồng hồ lượt
+  const [eloChange, setEloChange] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [moveCount, setMoveCount] = useState(0);   // ← số nước đi
+  const [timeLeft, setTimeLeft] = useState(TURN_TIME); // ← đồng hồ lượt
 
-  const eloAtStartRef  = useRef(user?.elo || 1200);
+  const eloAtStartRef = useRef(user?.elo || 1200);
   // Guard: ngăn saveElo bị gọi 2 lần (StrictMode / race condition)
-  const eloSavedRef    = useRef(false);
+  const eloSavedRef = useRef(false);
 
   useEffect(() => { if (!user) navigate('/login'); }, [user, navigate]);
 
@@ -73,9 +73,9 @@ const PlayVsAI = () => {
     setIsSaving(true);
     try {
       const eloStart = eloAtStartRef.current;
-      const newElo   = calculateElo(eloStart, difficulty.aiElo, won ? 1 : 0);
-      const delta    = newElo - eloStart;
-      const res      = await updateEloApi(token, newElo, won);
+      const newElo = calculateElo(eloStart, difficulty.aiElo, won ? 1 : 0);
+      const delta = newElo - eloStart;
+      const res = await updateEloApi(token, newElo, won);
       updateUserElo(res.user);
       setEloChange(delta);
     } catch (e) { console.error(e); }
@@ -140,8 +140,8 @@ const PlayVsAI = () => {
 
   /* ── Reset ── */
   const reset = () => {
-    eloAtStartRef.current  = user?.elo || 1200;
-    eloSavedRef.current    = false; // ← reset guard cho ván mới
+    eloAtStartRef.current = user?.elo || 1200;
+    eloSavedRef.current = false; // ← reset guard cho ván mới
     setBoard(emptyBoard());
     setTurn('player');
     setStatus('playing');
@@ -153,14 +153,14 @@ const PlayVsAI = () => {
 
   if (!user) return null;
 
-  const over        = status !== 'playing';
-  const displayElo  = over ? user.elo : eloAtStartRef.current;
-  const timerColor  = timeLeft > 30 ? 'var(--steam-green-bright)' : timeLeft > 10 ? '#f4b942' : '#e84c3d';
+  const over = status !== 'playing';
+  const displayElo = over ? user.elo : eloAtStartRef.current;
+  const timerColor = timeLeft > 30 ? 'var(--steam-green-bright)' : timeLeft > 10 ? '#f4b942' : '#e84c3d';
 
   const statusMsg = over
-    ? status === 'player_win' ? { icon: '🏆', text: 'Bạn thắng!',  color: 'var(--steam-green-bright)' }
-    : status === 'timeout'   ? { icon: '⏰', text: 'Hết giờ! AI thắng.', color: '#e84c3d' }
-    :                          { icon: '💀', text: 'AI thắng!',    color: '#e84c3d' }
+    ? status === 'player_win' ? { icon: '🏆', text: 'Bạn thắng!', color: 'var(--steam-green-bright)' }
+      : status === 'timeout' ? { icon: '⏰', text: 'Hết giờ! AI thắng.', color: '#e84c3d' }
+        : { icon: '💀', text: 'AI thắng!', color: '#e84c3d' }
     : isAIThinking
       ? { icon: '🤖', text: 'AI đang suy nghĩ...', color: 'var(--steam-text-dim)' }
       : { icon: '✨', text: 'Lượt của bạn!', color: 'var(--steam-green-bright)' };
@@ -168,69 +168,71 @@ const PlayVsAI = () => {
   return (
     <div className="container fade-in" style={{ padding: '20px 16px' }}>
       {/* Header */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px', background:'var(--steam-card-bg)', padding:'12px 20px', borderRadius:'4px', border:'1px solid var(--steam-border)' }}>
-        <Link to="/" className="btn btn-secondary" style={{ padding:'6px 14px', fontSize:'13px' }}>← Quay lại</Link>
-        <h2 style={{ margin:0, color:'var(--steam-highlight)', fontSize:'18px' }}>⚔️ Đánh Với Máy</h2>
-        <div style={{ fontSize:'13px' }}>Độ khó: <span style={{ color:difficulty.color, fontWeight:'bold' }}>{difficulty.level}</span></div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', background: 'var(--steam-card-bg)', padding: '12px 20px', borderRadius: '4px', border: '1px solid var(--steam-border)' }}>
+        <Link to="/" className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '13px' }}>← Quay lại</Link>
+        <h2 style={{ margin: 0, color: 'var(--steam-highlight)', fontSize: '18px' }}>⚔️ Đánh Với Máy</h2>
+        <div style={{ fontSize: '13px' }}>Độ khó: <span style={{ color: difficulty.color, fontWeight: 'bold' }}>{difficulty.level}</span></div>
       </div>
 
       {/* VS bar */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr auto 1fr', alignItems:'center', gap:'16px', marginBottom:'16px', background:'var(--steam-card-bg)', padding:'12px 24px', borderRadius:'4px', border:'1px solid var(--steam-border)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '16px', marginBottom: '16px', background: 'var(--steam-card-bg)', padding: '12px 24px', borderRadius: '4px', border: '1px solid var(--steam-border)' }}>
         <div>
-          <div style={{ fontSize:'12px', color:'var(--steam-text-dim)' }}>Bạn (X)</div>
-          <div style={{ color:'var(--steam-blue)', fontWeight:'bold', fontSize:'17px' }}>{user.username}</div>
-          <div style={{ fontSize:'12px', color:'var(--steam-text-dim)' }}>Elo: <b style={{ color:'var(--steam-highlight)' }}>{displayElo}</b></div>
+          <div style={{ fontSize: '12px', color: 'var(--steam-text-dim)' }}>Bạn (X)</div>
+          <div style={{ color: 'var(--steam-blue)', fontWeight: 'bold', fontSize: '17px' }}>{user.username}</div>
+          <div style={{ fontSize: '12px', color: 'var(--steam-text-dim)' }}>Elo: <b style={{ color: 'var(--steam-highlight)' }}>{displayElo}</b></div>
         </div>
-        <div style={{ textAlign:'center', fontSize:'22px', fontWeight:'bold', color:'#c6a614' }}>VS</div>
-        <div style={{ textAlign:'right' }}>
-          <div style={{ fontSize:'12px', color:'var(--steam-text-dim)' }}>AI (O)</div>
-          <div style={{ color:'var(--steam-orange)', fontWeight:'bold', fontSize:'17px' }}>CaroBot</div>
-          <div style={{ fontSize:'12px', color:'var(--steam-text-dim)' }}>Elo: <b style={{ color:difficulty.color }}>{difficulty.aiElo}</b></div>
+        <div style={{ textAlign: 'center', fontSize: '22px', fontWeight: 'bold', color: '#c6a614' }}>VS</div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '12px', color: 'var(--steam-text-dim)' }}>AI (O)</div>
+          <div style={{ color: 'var(--steam-orange)', fontWeight: 'bold', fontSize: '17px' }}>CaroBot</div>
+          <div style={{ fontSize: '12px', color: 'var(--steam-text-dim)' }}>Elo: <b style={{ color: difficulty.color }}>{difficulty.aiElo}</b></div>
         </div>
       </div>
 
       {/* Main */}
-      <div style={{ display:'flex', gap:'20px' }}>
+      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
         {/* Board area */}
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '100%' }}>
           {/* Status + timer bar */}
-          <div style={{ display:'flex', alignItems:'center', gap:'16px', marginBottom:'10px', width:'100%', justifyContent:'space-between' }}>
-            <div style={{ fontSize:'15px', fontWeight:'bold', color: statusMsg.color }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '10px', width: '100%', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: '15px', fontWeight: 'bold', color: statusMsg.color }}>
               {statusMsg.icon} {statusMsg.text}
             </div>
             {!over && (
-              <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-                <span style={{ fontSize:'11px', color:'var(--steam-text-dim)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '11px', color: 'var(--steam-text-dim)' }}>
                   {turn === 'player' ? 'Thời gian lượt' : 'AI đang nghĩ'}
                 </span>
                 {turn === 'player'
                   ? <TimerRing timeLeft={timeLeft} color={timerColor} />
-                  : <div style={{ width:64, height:64, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--steam-text-dim)', fontSize:'22px' }}>⏳</div>
+                  : <div style={{ width: 64, height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--steam-text-dim)', fontSize: '22px' }}>⏳</div>
                 }
               </div>
             )}
           </div>
 
-          <Board board={board} onCellClick={handleCellClick}
-            disabled={over || turn !== 'player' || isAIThinking} winCells={winCells} />
+          <div style={{ maxWidth: '100%', overflowX: 'auto', width: '100%', display: 'flex', justifyContent: 'center', paddingBottom: '10px' }}>
+            <Board board={board} onCellClick={handleCellClick}
+              disabled={over || turn !== 'player' || isAIThinking} winCells={winCells} />
+          </div>
         </div>
 
         {/* Side panel */}
-        <div style={{ width:'210px', display:'flex', flexDirection:'column', gap:'12px' }}>
+        <div style={{ width: '210px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
           {/* Thông tin trận */}
-          <div style={{ background:'var(--steam-card-bg)', borderRadius:'4px', border:'1px solid var(--steam-border)', padding:'16px' }}>
-            <div style={{ fontWeight:'bold', marginBottom:'10px', color:'var(--steam-highlight)', fontSize:'13px', borderBottom:'1px solid var(--steam-border)', paddingBottom:'8px' }}>Thông Tin Trận</div>
-            <div style={{ fontSize:'12px', display:'flex', flexDirection:'column', gap:'7px' }}>
+          <div style={{ background: 'var(--steam-card-bg)', borderRadius: '4px', border: '1px solid var(--steam-border)', padding: '16px' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '10px', color: 'var(--steam-highlight)', fontSize: '13px', borderBottom: '1px solid var(--steam-border)', paddingBottom: '8px' }}>Thông Tin Trận</div>
+            <div style={{ fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '7px' }}>
               {[
                 ['Chế độ', 'Vs AI'],
-                ['Độ khó', <span style={{ color:difficulty.color }}>{difficulty.label}</span>],
+                ['Độ khó', <span style={{ color: difficulty.color }}>{difficulty.label}</span>],
                 ['AI Elo', difficulty.aiElo],
-                ['Elo bạn', <b style={{ color:'var(--steam-blue)' }}>{displayElo}</b>],
-                ['Số nước đi', <b style={{ color:'var(--steam-highlight)' }}>{moveCount}</b>],
+                ['Elo bạn', <b style={{ color: 'var(--steam-blue)' }}>{displayElo}</b>],
+                ['Số nước đi', <b style={{ color: 'var(--steam-highlight)' }}>{moveCount}</b>],
               ].map(([k, v], i) => (
-                <div key={i} style={{ display:'flex', justifyContent:'space-between' }}>
-                  <span style={{ color:'var(--steam-text-dim)' }}>{k}</span><span>{v}</span>
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--steam-text-dim)' }}>{k}</span><span>{v}</span>
                 </div>
               ))}
             </div>
@@ -241,7 +243,7 @@ const PlayVsAI = () => {
             <button
               onClick={reset}
               className="btn btn-secondary"
-              style={{ width:'100%', justifyContent:'center', color:'#e87c23', borderColor:'rgba(232,124,35,0.4)' }}
+              style={{ width: '100%', justifyContent: 'center', color: '#e87c23', borderColor: 'rgba(232,124,35,0.4)' }}
             >
               🔄 Ván mới
             </button>
@@ -251,38 +253,38 @@ const PlayVsAI = () => {
           {over && (
             <div style={{
               background: status === 'player_win' ? 'rgba(70,197,67,0.1)' : 'rgba(232,76,61,0.1)',
-              borderRadius:'4px',
+              borderRadius: '4px',
               border: `1px solid ${status === 'player_win' ? 'var(--steam-green)' : '#e84c3d'}`,
-              padding:'16px', textAlign:'center'
+              padding: '16px', textAlign: 'center'
             }}>
-              <div style={{ fontSize:'28px', marginBottom:'6px' }}>
+              <div style={{ fontSize: '28px', marginBottom: '6px' }}>
                 {status === 'player_win' ? '🏆' : status === 'timeout' ? '⏰' : '💀'}
               </div>
-              <div style={{ fontWeight:'bold', color: status === 'player_win' ? 'var(--steam-green-bright)' : '#e84c3d', marginBottom:'6px' }}>
+              <div style={{ fontWeight: 'bold', color: status === 'player_win' ? 'var(--steam-green-bright)' : '#e84c3d', marginBottom: '6px' }}>
                 {status === 'player_win' ? 'Chiến thắng!' : status === 'timeout' ? 'Hết giờ!' : 'Thất bại!'}
               </div>
-              <div style={{ fontSize:'12px', color:'var(--steam-text-dim)', marginBottom:'10px' }}>
-                Tổng nước đi: <b style={{ color:'var(--steam-highlight)' }}>{moveCount}</b>
+              <div style={{ fontSize: '12px', color: 'var(--steam-text-dim)', marginBottom: '10px' }}>
+                Tổng nước đi: <b style={{ color: 'var(--steam-highlight)' }}>{moveCount}</b>
               </div>
-              {isSaving && <div style={{ fontSize:'12px', color:'var(--steam-text-dim)', marginBottom:'8px' }}>Đang lưu Elo...</div>}
+              {isSaving && <div style={{ fontSize: '12px', color: 'var(--steam-text-dim)', marginBottom: '8px' }}>Đang lưu Elo...</div>}
               {eloChange !== null && (
-                <div style={{ fontSize:'13px', marginBottom:'10px' }}>
-                  Elo: <span style={{ fontWeight:'bold', color: eloChange >= 0 ? 'var(--steam-green-bright)' : '#e84c3d' }}>
+                <div style={{ fontSize: '13px', marginBottom: '10px' }}>
+                  Elo: <span style={{ fontWeight: 'bold', color: eloChange >= 0 ? 'var(--steam-green-bright)' : '#e84c3d' }}>
                     {eloChange >= 0 ? `+${eloChange}` : eloChange}
                   </span>
-                  {' → '}<span style={{ color:'var(--steam-highlight)' }}>{user.elo}</span>
+                  {' → '}<span style={{ color: 'var(--steam-highlight)' }}>{user.elo}</span>
                 </div>
               )}
-              <button onClick={reset} className="btn btn-primary" style={{ width:'100%', marginBottom:'8px' }}>🔄 Chơi lại</button>
-              <Link to="/" className="btn btn-secondary" style={{ display:'block', textAlign:'center', boxSizing:'border-box' }}>Về Trang Chủ</Link>
+              <button onClick={reset} className="btn btn-primary" style={{ width: '100%', marginBottom: '8px' }}>🔄 Chơi lại</button>
+              <Link to="/" className="btn btn-secondary" style={{ display: 'block', textAlign: 'center', boxSizing: 'border-box' }}>Về Trang Chủ</Link>
             </div>
           )}
 
           {!over && (
-            <div style={{ background:'var(--steam-card-bg)', borderRadius:'4px', border:'1px solid var(--steam-border)', padding:'12px', fontSize:'12px', color:'var(--steam-text-dim)' }}>
-              <b style={{ color:'var(--steam-highlight)' }}>💡 Gợi ý</b><br/><br/>
-              Bạn là X, AI là O. Nối 5 quân để thắng.<br/>
-              Mỗi lượt có <b style={{ color:'var(--steam-highlight)' }}>{TURN_TIME}s</b>. Hết giờ = thua!
+            <div style={{ background: 'var(--steam-card-bg)', borderRadius: '4px', border: '1px solid var(--steam-border)', padding: '12px', fontSize: '12px', color: 'var(--steam-text-dim)' }}>
+              <b style={{ color: 'var(--steam-highlight)' }}>💡 Gợi ý</b><br /><br />
+              Bạn là X, AI là O. Nối 5 quân để thắng.<br />
+              Mỗi lượt có <b style={{ color: 'var(--steam-highlight)' }}>{TURN_TIME}s</b>. Hết giờ = thua!
             </div>
           )}
         </div>
