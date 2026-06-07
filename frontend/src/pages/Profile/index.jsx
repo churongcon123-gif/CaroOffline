@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../states/authStore';
 import { getProfileApi } from '../../api/authApi';
 import { getUnlockedAchievements } from '../../utils/achievements';
+import ReplayModal from '../../components/ReplayModal';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -23,6 +24,13 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [replayOpen, setReplayOpen] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState(null);
+
+  const handleOpenReplay = (match) => {
+    setSelectedMatch(match);
+    setReplayOpen(true);
+  };
 
   useEffect(() => {
     if (!user || !token) { navigate('/login'); return; }
@@ -183,11 +191,11 @@ const Profile = () => {
               <div key={h.id || i} style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '12px 14px', borderRadius: '6px', marginBottom: '8px',
-                background: h.result === 'win' ? 'rgba(70,197,67,0.08)' : 'rgba(232,76,61,0.08)',
-                border: `1px solid ${h.result === 'win' ? 'rgba(70,197,67,0.25)' : 'rgba(232,76,61,0.25)'}`,
+                background: h.result === 'win' ? 'rgba(70,197,67,0.08)' : h.result === 'draw' ? 'rgba(244,185,66,0.08)' : 'rgba(232,76,61,0.08)',
+                border: `1px solid ${h.result === 'win' ? 'rgba(70,197,67,0.25)' : h.result === 'draw' ? 'rgba(244,185,66,0.25)' : 'rgba(232,76,61,0.25)'}`,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ fontSize: '20px' }}>{h.result === 'win' ? '🏆' : '💀'}</div>
+                  <div style={{ fontSize: '20px' }}>{h.result === 'win' ? '🏆' : h.result === 'draw' ? '🤝' : '💀'}</div>
                   <div>
                     <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--steam-highlight)' }}>
                       vs <span style={{ color: h.result === 'win' ? 'var(--steam-orange)' : 'var(--steam-blue)' }}>{h.opponent_username}</span>
@@ -197,12 +205,19 @@ const Profile = () => {
                     </div>
                   </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '14px', color: h.result === 'win' ? 'var(--steam-green-bright)' : '#e84c3d' }}>
-                    {h.result === 'win' ? 'THẮNG' : 'THUA'}
-                  </div>
-                  <div style={{ fontSize: '12px', color: h.elo_change >= 0 ? 'var(--steam-green-bright)' : '#e84c3d', fontWeight: '600' }}>
-                    {h.elo_change >= 0 ? '+' : ''}{h.elo_change} Elo
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  {h.moves && (
+                    <button onClick={() => handleOpenReplay(h)} className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                      👁️ Xem lại
+                    </button>
+                  )}
+                  <div style={{ textAlign: 'right', minWidth: '70px' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: h.result === 'win' ? 'var(--steam-green-bright)' : h.result === 'draw' ? 'var(--steam-orange)' : '#e84c3d' }}>
+                      {h.result === 'win' ? 'THẮNG' : h.result === 'draw' ? 'HÒA' : 'THUA'}
+                    </div>
+                    <div style={{ fontSize: '11px', color: h.elo_change >= 0 ? 'var(--steam-green-bright)' : '#e84c3d', fontWeight: '600' }}>
+                      {h.elo_change >= 0 ? '+' : ''}{h.elo_change} Elo
+                    </div>
                   </div>
                 </div>
               </div>
@@ -248,6 +263,16 @@ const Profile = () => {
           </div>
         )}
       </div>
+
+      {selectedMatch && (
+        <ReplayModal
+          isOpen={replayOpen}
+          onClose={() => { setReplayOpen(false); setSelectedMatch(null); }}
+          moves={selectedMatch.moves}
+          opponentName={selectedMatch.opponent_username}
+          result={selectedMatch.result}
+        />
+      )}
     </div>
   );
 };
