@@ -9,6 +9,7 @@ import PlayLocal from './pages/PlayLocal';
 import Leaderboard from './pages/Leaderboard';
 import Lobby from './pages/Lobby';
 import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 import useAuthStore from './states/authStore';
 import { ToastContainer } from './components/Toast';
 
@@ -39,10 +40,12 @@ const App = () => {
             onMouseLeave={e => e.currentTarget.style.color = 'var(--steam-text-dim)'}
           >🌐 Online</Link>
           {user ? (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '16px' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '12px' }}>
               <span style={{ fontSize: '13px' }}>
-                Welcome, <Link to="/profile" style={{ color: 'var(--steam-blue)', fontWeight: 'bold' }}>{user.username}</Link> (Elo: {user.elo})
+                Xin chào,{' '}<Link to="/profile" style={{ color: 'var(--steam-blue)', fontWeight: 'bold' }}>{user.username}</Link>
+                <span style={{ color: 'var(--steam-text-dim)', marginLeft: '6px' }}>(Elo: {user.elo})</span>
               </span>
+              <Link to="/settings" className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '12px' }}>⚙️</Link>
               <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '12px' }}>Logout</button>
             </span>
           ) : (
@@ -66,6 +69,7 @@ const App = () => {
           <Route path="/room/:id" element={<GameRoom />} />
           <Route path="/play-ai" element={<PlayVsAI />} />
           <Route path="/play-local" element={<PlayLocal />} />
+          <Route path="/settings" element={<Settings />} />
         </Routes>
       </main>
     </div>
