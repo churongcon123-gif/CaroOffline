@@ -1,5 +1,7 @@
 const { Server } = require('socket.io');
 const User = require('../models/User');
+const MatchHistory = require('../models/MatchHistory');
+
 
 // ── In-memory stores ──────────────────────────────────────────
 const rooms = new Map();           // roomId → roomObject
@@ -260,6 +262,13 @@ module.exports = (server) => {
               [user.username]:  newWinnerElo - winner.elo,
               [loser.username]: newLoserElo  - loser.elo,
             };
+            // Ghi lịch sử trận đấu
+            await MatchHistory.create({
+              winnerId: winner.id, loserId: loser.id,
+              winnerEloChange: newWinnerElo - winner.elo,
+              loserEloChange: newLoserElo - loser.elo,
+              mode: 'online',
+            });
             // Cập nhật elo trong playerData để rematch dùng đúng
             winner.elo = newWinnerElo;
             loser.elo  = newLoserElo;
@@ -308,6 +317,13 @@ module.exports = (server) => {
             [opponent.username]: newWE - winnerData.elo,
             [username]: newLE - loserData.elo,
           };
+          // Ghi lịch sử trận đấu (timeout)
+          await MatchHistory.create({
+            winnerId: winnerData.id, loserId: loserData.id,
+            winnerEloChange: newWE - winnerData.elo,
+            loserEloChange: newLE - loserData.elo,
+            mode: 'online',
+          });
         }
       } catch (e) { console.error('Timeout elo update error:', e); }
 
