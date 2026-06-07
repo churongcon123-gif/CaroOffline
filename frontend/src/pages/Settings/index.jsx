@@ -6,7 +6,7 @@ import useToastStore from '../../states/toastStore';
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Settings = () => {
-  const { user, token, logout } = useAuthStore();
+  const { user, token, logout, updateUserElo } = useAuthStore();
   const { addToast } = useToastStore();
   const navigate = useNavigate();
 
@@ -17,6 +17,26 @@ const Settings = () => {
   const [showNew, setShowNew] = useState(false);
   const [loading, setLoading] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(localStorage.getItem('sound_enabled') !== 'false');
+
+  const AVATARS = ['🦊', '🐱', '🐶', '🐼', '🦁', '🐯', '🐨', '🦄', '🦖', '🐙', '👾', '🤖', '🥷', '🧑‍🚀'];
+  const [selectedAvatar, setSelectedAvatar] = useState(user.avatar || '🦊');
+
+  const handleSaveAvatar = async (avatar) => {
+    try {
+      const res = await fetch(`${API}/api/auth/change-avatar`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ avatar }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw { error: data.error };
+      addToast('Cập nhật ảnh đại diện thành công!', 'success');
+      updateUserElo(data.user);
+      setSelectedAvatar(avatar);
+    } catch (err) {
+      addToast(err.error || 'Đổi avatar thất bại. Thử lại!', 'error');
+    }
+  };
 
   const handleToggleSound = (e) => {
     const val = e.target.checked;
@@ -90,9 +110,10 @@ const Settings = () => {
           width: '52px', height: '52px', borderRadius: '50%',
           background: 'linear-gradient(135deg, var(--steam-blue), var(--steam-orange))',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '22px', fontWeight: 'bold', color: 'white', flexShrink: 0
+          fontSize: '24px', userSelect: 'none', flexShrink: 0,
+          border: '1px solid var(--steam-border)'
         }}>
-          {user.username[0].toUpperCase()}
+          {user.avatar || user.username[0].toUpperCase()}
         </div>
         <div>
           <div style={{ fontWeight: 'bold', color: 'var(--steam-highlight)', fontSize: '16px' }}>{user.username}</div>
@@ -101,6 +122,55 @@ const Settings = () => {
             {' · '}
             <Link to="/profile" style={{ color: 'var(--steam-blue)', fontSize: '12px' }}>Xem Profile</Link>
           </div>
+        </div>
+      </div>
+
+      {/* Avatar Selector */}
+      <div style={{
+        background: 'var(--steam-card-bg)', borderRadius: '8px',
+        border: '1px solid var(--steam-border)', padding: '24px',
+        marginBottom: '16px', position: 'relative', overflow: 'hidden'
+      }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, var(--steam-blue), var(--steam-green-bright))' }} />
+        
+        <h3 style={{ margin: '0 0 16px', color: 'var(--steam-highlight)', fontSize: '15px' }}>
+          🎭 Chọn Ảnh Đại Diện
+        </h3>
+
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
+          <div style={{
+            width: '64px', height: '64px', borderRadius: '50%',
+            background: 'linear-gradient(135deg, var(--steam-blue), var(--steam-orange))',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '32px', userSelect: 'none', border: '2px solid var(--steam-border)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)', flexShrink: 0
+          }}>
+            {selectedAvatar}
+          </div>
+          <div>
+            <div style={{ fontSize: '13px', color: 'var(--steam-highlight)', fontWeight: 'bold' }}>Mẫu ảnh đại diện</div>
+            <div style={{ fontSize: '11px', color: 'var(--steam-text-dim)', marginTop: '3px' }}>Nhấp chọn một biểu tượng bên dưới để thay đổi ngay lập tức.</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
+          {AVATARS.map(av => (
+            <button
+              key={av}
+              onClick={() => handleSaveAvatar(av)}
+              style={{
+                width: '40px', height: '40px', borderRadius: '50%',
+                background: selectedAvatar === av ? 'rgba(42,122,186,0.3)' : 'rgba(0,0,0,0.2)',
+                border: `2px solid ${selectedAvatar === av ? 'var(--steam-blue)' : 'var(--steam-border)'}`,
+                fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', transition: 'all 0.15s', outline: 'none'
+              }}
+              onMouseEnter={e => { if (selectedAvatar !== av) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+              onMouseLeave={e => { if (selectedAvatar !== av) e.currentTarget.style.background = 'rgba(0,0,0,0.2)'; }}
+            >
+              {av}
+            </button>
+          ))}
         </div>
       </div>
 

@@ -50,8 +50,17 @@ class User {
    * @returns {Object|undefined} User object không có password
    */
   static async findById(id) {
-    const query = 'SELECT id, username, elo, matches_played, wins, losses FROM users WHERE id = $1';
+    const query = 'SELECT id, username, elo, matches_played, wins, losses, avatar FROM users WHERE id = $1';
     const { rows } = await db.query(query, [id]);
+    return rows[0];
+  }
+
+  /**
+   * Cập nhật Avatar người dùng.
+   */
+  static async updateAvatar(userId, avatar) {
+    const query = 'UPDATE users SET avatar = $1 WHERE id = $2 RETURNING id, username, elo, matches_played, wins, losses, avatar';
+    const { rows } = await db.query(query, [avatar, userId]);
     return rows[0];
   }
 

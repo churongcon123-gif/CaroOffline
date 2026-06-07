@@ -87,11 +87,11 @@ const Profile = () => {
             background: 'linear-gradient(135deg, var(--steam-blue), var(--steam-orange))',
             border: '3px solid var(--steam-border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '42px', fontWeight: 'bold', color: 'white',
+            fontSize: user.avatar ? '54px' : '42px', fontWeight: 'bold', color: 'white',
             boxShadow: '0 4px 16px rgba(0,0,0,0.5)', userSelect: 'none',
             flexShrink: 0
           }}>
-            {avatarLetter}
+            {user.avatar || avatarLetter}
           </div>
 
           <div style={{ flex: 1 }}>

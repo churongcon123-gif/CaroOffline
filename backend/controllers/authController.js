@@ -57,6 +57,7 @@ const login = async (req, res) => {
         wins: user.wins,
         losses: user.losses,
         matches_played: user.matches_played,
+        avatar: user.avatar,
       }
     });
   } catch (error) {
@@ -93,6 +94,7 @@ const getProfile = async (req, res) => {
         wins: user.wins,
         losses: user.losses,
         matches_played: user.matches_played,
+        avatar: user.avatar,
       }
     });
   } catch (error) {
@@ -141,5 +143,36 @@ const changePassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getProfile, changePassword };
+const changeAvatar = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const token = authHeader.split(' ')[1];
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    const { avatar } = req.body;
+    if (!avatar) {
+      return res.status(400).json({ error: 'Vui lòng cung cấp avatar' });
+    }
+
+    const updatedUser = await User.updateAvatar(decoded.userId, avatar);
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ message: 'Đổi avatar thành công!', user: updatedUser });
+  } catch (error) {
+    console.error('Change avatar error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+module.exports = { register, login, getProfile, changePassword, changeAvatar };
 

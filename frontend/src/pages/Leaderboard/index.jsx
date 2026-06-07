@@ -90,6 +90,15 @@ const Leaderboard = () => {
           <div style={{ fontWeight: '900', fontSize: '26px', color: 'var(--steam-blue)', minWidth: 50 }}>
             #{myRank.rank}
           </div>
+          <div style={{
+            width: '32px', height: '32px', borderRadius: '50%',
+            background: 'linear-gradient(135deg, var(--steam-blue), var(--steam-orange))',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '16px', userSelect: 'none', border: '1px solid var(--steam-border)',
+            flexShrink: 0
+          }}>
+            {myRank.avatar || myRank.username[0].toUpperCase()}
+          </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 'bold', color: 'var(--steam-highlight)', fontSize: '16px' }}>{myRank.username}</div>
             <div style={{ fontSize: '12px', color: 'var(--steam-text-dim)' }}>
@@ -190,6 +199,15 @@ const Leaderboard = () => {
 
                   {/* Username + badge */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <div style={{
+                      width: '28px', height: '28px', borderRadius: '50%',
+                      background: 'linear-gradient(135deg, var(--steam-blue), var(--steam-orange))',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '14px', userSelect: 'none', border: '1px solid var(--steam-border)',
+                      flexShrink: 0
+                    }}>
+                      {player.avatar || player.username[0].toUpperCase()}
+                    </div>
                     <div>
                       <div style={{
                         fontWeight: isMe ? '700' : '500',
