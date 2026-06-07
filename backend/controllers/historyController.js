@@ -10,6 +10,7 @@ const jwt = require('jsonwebtoken');
  * GET /api/history
  * Query params: limit (mặc định 10)
  * Cần Bearer token để xác thực userId
+ * Trả về danh sách ván đấu: { id, ended_at, mode, is_draw, moves, result, elo_change, opponent_username, opponent_elo }
  */
 const getHistory = async (req, res) => {
   try {
