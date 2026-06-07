@@ -5,6 +5,7 @@ import useAuthStore from '../../states/authStore';
 import useToastStore from '../../states/toastStore';
 import Board from '../../components/Board';
 import { getWinningCells } from '../../utils/checkWinner';
+import SoundSystem from '../../utils/sound';
 
 const TURN_TIME = 30; // giây mỗi lượt
 
@@ -80,6 +81,7 @@ const GameRoom = () => {
   const [myRematchSent, setMyRematchSent] = useState(false);
   const chatEndRef = useRef(null);
   const timerIdRef = useRef(null);
+  const prevMovesCountRef = useRef(0);
   const [drawOfferSender, setDrawOfferSender] = useState(null); // Tên người gửi đề xuất hòa
   const [sidebarTab, setSidebarTab] = useState('chat'); // 'chat' hoặc 'moves'
   const eloUpdatedRef = useRef(false); // chống update elo 2 lần
@@ -92,6 +94,13 @@ const GameRoom = () => {
     socket.emit('join_room', { roomId: id, user });
 
     socket.on('room_state_update', (roomState) => {
+      // Phát tiếng click cờ khi số nước đi tăng lên
+      const currentMovesCount = roomState.moves?.length || 0;
+      if (currentMovesCount > prevMovesCountRef.current) {
+        SoundSystem.playClick();
+      }
+      prevMovesCountRef.current = currentMovesCount;
+
       setRoom(roomState);
 
       // Cập nhật Elo store nếu game finished và chưa update
@@ -104,10 +113,19 @@ const GameRoom = () => {
             elo: (user.elo || 1200) + myEloChange,
           });
         }
+        // Phát tiếng thắng/thua khi kết thúc game
+        if (roomState.winner === user.username) {
+          SoundSystem.playWin();
+        } else if (roomState.winner) {
+          SoundSystem.playLose();
+        }
       }
     });
 
     socket.on('receive_message', (msg) => {
+      if (msg.user !== user.username) {
+        SoundSystem.playChat();
+      }
       setRoom(prev => {
         if (!prev) return prev;
         return { ...prev, messages: [...(prev.messages || []), msg] };
@@ -158,6 +176,10 @@ const GameRoom = () => {
         if (prev <= 1) {
           clearInterval(timerIdRef.current);
           return 0;
+        }
+        // Phát tiếng bíp khi còn từ 1 đến 5 giây cuối
+        if (prev - 1 <= 5) {
+          SoundSystem.playTick();
         }
         return prev - 1;
       });
