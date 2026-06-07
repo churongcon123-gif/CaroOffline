@@ -203,6 +203,11 @@ module.exports = (server) => {
         if (room.players.length === 2) {
           room.status = 'playing';
           room.turnStartedAt = Date.now();
+          // System messages
+          room.messages.push({ isSystem: true, text: `⚡ ${user.username} đã tham gia phòng!`, time: new Date().toISOString() });
+          room.messages.push({ isSystem: true, text: `🎮 Ván đấu bắt đầu! ${room.players[0].username} (X) vs ${user.username} (O)`, time: new Date().toISOString() });
+        } else {
+          room.messages.push({ isSystem: true, text: `⚡ ${user.username} đã vào phòng. Chờ đối thủ...`, time: new Date().toISOString() });
         }
       }
 
@@ -246,6 +251,8 @@ module.exports = (server) => {
         room.status = 'finished';
         room.winner = user.username;
         room.winningCells = winCells;
+        // System message cho kết thúc game
+        room.messages.push({ isSystem: true, text: `🏆 ${user.username} chiến thắng!`, time: new Date().toISOString() });
 
         // Cập nhật Elo cho cả 2 người chơi
         try {

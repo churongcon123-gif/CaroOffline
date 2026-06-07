@@ -184,6 +184,12 @@ const GameRoom = () => {
     socket.emit('rematch_request', { roomId: id, username: user.username });
   };
 
+  const handleSendEmoji = (emoji) => {
+    socket.emit('send_message', { roomId: id, user, text: emoji });
+  };
+
+  const QUICK_EMOJIS = ['👍', '😂', '🔥', '💀', '🏆', '🤝', '😤', '🎯'];
+
   if (!room) {
     return (
       <div className="container" style={{ padding: '40px', textAlign: 'center', color: 'var(--steam-text-dim)' }}>
@@ -315,31 +321,52 @@ const GameRoom = () => {
             )}
           </div>
 
-          <div style={{ flex: 1, padding: '10px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {/* System messages */}
-            <div style={{ fontSize: '11px', color: 'var(--steam-text-dim)', textAlign: 'center', padding: '4px 0' }}>
+          <div style={{ flex: 1, padding: '10px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            {/* Players info */}
+            <div style={{ fontSize: '11px', color: 'var(--steam-text-dim)', textAlign: 'center', padding: '4px 0', borderBottom: '1px solid var(--steam-border)', marginBottom: '4px' }}>
               {room.players[0]?.username} (X) vs {room.players[1]?.username || '?'} (O)
             </div>
             {(room.messages || []).map((msg, i) => (
-              <div key={i} style={{ fontSize: '13px' }}>
-                <span style={{ color: msg.user === user.username ? 'var(--steam-blue)' : 'var(--steam-orange)', fontWeight: 'bold' }}>
-                  {msg.user}:{' '}
-                </span>
-                <span style={{ color: 'var(--steam-highlight)' }}>{msg.text}</span>
-              </div>
+              msg.isSystem
+                ? (
+                  <div key={i} style={{ textAlign: 'center', fontSize: '11px', fontStyle: 'italic', color: '#f4b942', padding: '2px 6px', background: 'rgba(244,185,66,0.08)', borderRadius: '4px' }}>
+                    {msg.text}
+                  </div>
+                ) : (
+                  <div key={i} style={{ fontSize: '12px', lineHeight: '1.5' }}>
+                    <span style={{ color: msg.user === user.username ? 'var(--steam-blue)' : 'var(--steam-orange)', fontWeight: 'bold' }}>
+                      {msg.user}:{' '}
+                    </span>
+                    <span style={{ color: 'var(--steam-highlight)' }}>{msg.text}</span>
+                  </div>
+                )
             ))}
             <div ref={chatEndRef} />
           </div>
 
-          <form onSubmit={handleSendMessage} style={{ display: 'flex', padding: '10px', borderTop: '1px solid var(--steam-border)', gap: '6px' }}>
+          {/* Emoji quick-send */}
+          <div style={{ padding: '6px 10px', borderTop: '1px solid var(--steam-border)', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+            {QUICK_EMOJIS.map(e => (
+              <button key={e} onClick={() => handleSendEmoji(e)}
+                style={{ background: 'none', border: '1px solid var(--steam-border)', borderRadius: '4px', cursor: 'pointer', fontSize: '16px', padding: '2px 5px', transition: 'background 0.15s', lineHeight: 1 }}
+                onMouseEnter={ev => ev.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                onMouseLeave={ev => ev.currentTarget.style.background = 'none'}
+                title={e}>
+                {e}
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={handleSendMessage} style={{ display: 'flex', padding: '8px 10px', borderTop: '1px solid var(--steam-border)', gap: '6px' }}>
             <input
               type="text"
               value={chatMessage}
               onChange={(e) => setChatMessage(e.target.value)}
               placeholder="Nhập tin nhắn..."
-              style={{ flex: 1, padding: '7px 10px', background: 'var(--steam-darker-bg)', border: '1px solid var(--steam-border)', color: 'var(--steam-highlight)', borderRadius: '3px', outline: 'none', fontSize: '13px' }}
+              maxLength={100}
+              style={{ flex: 1, padding: '7px 10px', background: 'var(--steam-darker-bg)', border: '1px solid var(--steam-border)', color: 'var(--steam-highlight)', borderRadius: '3px', outline: 'none', fontSize: '12px' }}
             />
-            <button type="submit" className="btn btn-primary" style={{ padding: '7px 12px' }}>Gửi</button>
+            <button type="submit" className="btn btn-primary" style={{ padding: '7px 12px', fontSize: '12px' }}>Gửi</button>
           </form>
         </div>
 
