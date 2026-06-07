@@ -17,7 +17,6 @@ const getLeaderboard = async (req, res) => {
     const totalUsers = parseInt(countRes.rows[0].count) || 0;
     const totalPages = Math.ceil(totalUsers / limit);
 
-    // Lấy danh sách kèm theo xếp hạng toàn cục
     const { rows } = await db.query(
       `SELECT
          sub.rank,
@@ -26,7 +25,8 @@ const getLeaderboard = async (req, res) => {
          sub.wins,
          sub.losses,
          sub.matches_played,
-         sub.win_rate
+         sub.win_rate,
+         sub.avatar
        FROM (
          SELECT
            ROW_NUMBER() OVER (ORDER BY elo DESC, wins DESC) AS rank,
@@ -35,6 +35,7 @@ const getLeaderboard = async (req, res) => {
            wins,
            losses,
            matches_played,
+           avatar,
            CASE
              WHEN matches_played > 0
              THEN ROUND((wins::NUMERIC / matches_played) * 100, 1)

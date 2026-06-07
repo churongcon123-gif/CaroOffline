@@ -50,8 +50,17 @@ class User {
    * @returns {Object|undefined} User object không có password
    */
   static async findById(id) {
-    const query = 'SELECT id, username, elo, matches_played, wins, losses FROM users WHERE id = $1';
+    const query = 'SELECT id, username, elo, matches_played, wins, losses, avatar FROM users WHERE id = $1';
     const { rows } = await db.query(query, [id]);
+    return rows[0];
+  }
+
+  /**
+   * Cập nhật Avatar người dùng.
+   */
+  static async updateAvatar(userId, avatar) {
+    const query = 'UPDATE users SET avatar = $1 WHERE id = $2 RETURNING id, username, elo, matches_played, wins, losses, avatar';
+    const { rows } = await db.query(query, [avatar, userId]);
     return rows[0];
   }
 
@@ -69,7 +78,14 @@ class User {
    * @param {boolean} won    - true nếu người chơi thắng
    * @returns {Object} User object đã cập nhật
    */
-  static async updateEloAndStats(userId, newElo, won) {
+  static async updateEloAndStats(userId, newElo, result) {
+    let winsInc = 0;
+    let lossesInc = 0;
+    if (result === 'win' || result === true) {
+      winsInc = 1;
+    } else if (result === 'loss' || result === false) {
+      lossesInc = 1;
+    }
     const query = `
       UPDATE users
       SET elo            = $1,
@@ -81,10 +97,19 @@ class User {
     `;
     const { rows } = await db.query(query, [
       newElo,
-      won ? 1 : 0, // $2: tăng wins nếu thắng
-      won ? 0 : 1, // $3: tăng losses nếu thua
+      winsInc,
+      lossesInc,
       userId
     ]);
+    return rows[0];
+  }
+
+  /**
+   * Cập nhật mật khẩu người dùng.
+   */
+  static async updatePassword(userId, hashedPassword) {
+    const query = 'UPDATE users SET password = $1 WHERE id = $2 RETURNING id';
+    const { rows } = await db.query(query, [hashedPassword, userId]);
     return rows[0];
   }
 }

@@ -5,6 +5,7 @@ import useAuthStore from '../../states/authStore';
 import useToastStore from '../../states/toastStore';
 import Board from '../../components/Board';
 import { getWinningCells } from '../../utils/checkWinner';
+import SoundSystem from '../../utils/sound';
 
 const TURN_TIME = 30; // giây mỗi lượt
 
@@ -80,6 +81,9 @@ const GameRoom = () => {
   const [myRematchSent, setMyRematchSent] = useState(false);
   const chatEndRef = useRef(null);
   const timerIdRef = useRef(null);
+  const prevMovesCountRef = useRef(0);
+  const [drawOfferSender, setDrawOfferSender] = useState(null); // Tên người gửi đề xuất hòa
+  const [sidebarTab, setSidebarTab] = useState('chat'); // 'chat' hoặc 'moves'
   const eloUpdatedRef = useRef(false); // chống update elo 2 lần
 
   // ── Socket setup ──────────────────────────────────────────────
@@ -90,6 +94,13 @@ const GameRoom = () => {
     socket.emit('join_room', { roomId: id, user });
 
     socket.on('room_state_update', (roomState) => {
+      // Phát tiếng click cờ khi số nước đi tăng lên
+      const currentMovesCount = roomState.moves?.length || 0;
+      if (currentMovesCount > prevMovesCountRef.current) {
+        SoundSystem.playClick();
+      }
+      prevMovesCountRef.current = currentMovesCount;
+
       setRoom(roomState);
 
       // Cập nhật Elo store nếu game finished và chưa update
@@ -102,10 +113,19 @@ const GameRoom = () => {
             elo: (user.elo || 1200) + myEloChange,
           });
         }
+        // Phát tiếng thắng/thua khi kết thúc game
+        if (roomState.winner === user.username) {
+          SoundSystem.playWin();
+        } else if (roomState.winner) {
+          SoundSystem.playLose();
+        }
       }
     });
 
     socket.on('receive_message', (msg) => {
+      if (msg.user !== user.username) {
+        SoundSystem.playChat();
+      }
       setRoom(prev => {
         if (!prev) return prev;
         return { ...prev, messages: [...(prev.messages || []), msg] };
@@ -121,11 +141,21 @@ const GameRoom = () => {
       navigate('/lobby');
     });
 
+    socket.on('draw_offered', ({ sender }) => {
+      setDrawOfferSender(sender);
+    });
+
+    socket.on('draw_declined', ({ decliner }) => {
+      addToast(`${decliner} đã từ chối lời đề nghị hòa!`, 'info');
+    });
+
     return () => {
       socket.off('room_state_update');
       socket.off('receive_message');
       socket.off('rematch_update');
       socket.off('join_room_error');
+      socket.off('draw_offered');
+      socket.off('draw_declined');
     };
   }, [user, navigate, id, updateUserElo]);
 
@@ -147,6 +177,10 @@ const GameRoom = () => {
           clearInterval(timerIdRef.current);
           return 0;
         }
+        // Phát tiếng bíp khi còn từ 1 đến 5 giây cuối
+        if (prev - 1 <= 5) {
+          SoundSystem.playTick();
+        }
         return prev - 1;
       });
     }, 1000);
@@ -164,6 +198,24 @@ const GameRoom = () => {
   const handleLeaveRoom = () => {
     socket.emit('leave_room', { roomId: id, user });
     navigate('/lobby');
+  };
+
+  const handleResign = () => {
+    if (window.confirm('Bạn có chắc chắn muốn đầu hàng ván đấu này?')) {
+      socket.emit('resign', { roomId: id, username: user.username });
+    }
+  };
+
+  const handleOfferDraw = () => {
+    if (window.confirm('Bạn muốn gửi đề nghị hòa tới đối thủ?')) {
+      socket.emit('offer_draw', { roomId: id, username: user.username });
+      addToast('Đã gửi đề nghị hòa tới đối thủ.', 'info');
+    }
+  };
+
+  const handleDrawResponse = (accepted) => {
+    socket.emit('draw_response', { roomId: id, username: user.username, accepted });
+    setDrawOfferSender(null);
   };
 
   const handleSendMessage = (e) => {
@@ -184,6 +236,12 @@ const GameRoom = () => {
     socket.emit('rematch_request', { roomId: id, username: user.username });
   };
 
+  const handleSendEmoji = (emoji) => {
+    socket.emit('send_message', { roomId: id, user, text: emoji });
+  };
+
+  const QUICK_EMOJIS = ['👍', '😂', '🔥', '💀', '🏆', '🤝', '😤', '🎯'];
+
   if (!room) {
     return (
       <div className="container" style={{ padding: '40px', textAlign: 'center', color: 'var(--steam-text-dim)' }}>
@@ -203,6 +261,25 @@ const GameRoom = () => {
   return (
     <div className="container fade-in" style={{ padding: '20px 16px' }}>
       {over && room.winner === user.username && <Confetti />}
+
+      {drawOfferSender && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div style={{ background: 'var(--steam-card-bg)', border: '1px solid var(--steam-border)', padding: '24px', borderRadius: '4px', maxWidth: '320px', width: '100%', textAlign: 'center' }}>
+            <h3 style={{ color: 'var(--steam-highlight)', marginTop: 0 }}>🤝 Đề nghị hòa</h3>
+            <p style={{ color: 'var(--steam-text-dim)', fontSize: '13px', lineHeight: '1.5' }}>
+              Đối thủ <strong>{drawOfferSender}</strong> đề nghị hòa ván đấu này. Bạn có đồng ý không?
+            </p>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+              <button onClick={() => handleDrawResponse(true)} className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}>
+                Đồng ý
+              </button>
+              <button onClick={() => handleDrawResponse(false)} className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>
+                Từ chối
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', background: 'var(--steam-card-bg)', padding: '12px 20px', borderRadius: '4px', border: '1px solid var(--steam-border)' }}>
@@ -257,12 +334,24 @@ const GameRoom = () => {
                 {room.disconnectWin && <span style={{ fontSize: '12px', color: 'var(--steam-text-dim)' }}>(đối thủ bỏ cuộc)</span>}
               </div>
             ) : room.status === 'playing' ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '15px', fontWeight: 'bold', color: isMyTurn ? 'var(--steam-green-bright)' : 'var(--steam-text-dim)' }}>
-                  {isMyTurn ? '✨ Lượt của bạn!' : `⏳ Chờ ${room.turn}...`}
-                </span>
-                {isMyTurn && <TimerRing timeLeft={timeLeft} color={timerColor} />}
-              </div>
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '15px', fontWeight: 'bold', color: isMyTurn ? 'var(--steam-green-bright)' : 'var(--steam-text-dim)' }}>
+                    {isMyTurn ? '✨ Lượt của bạn!' : `⏳ Chờ ${room.turn}...`}
+                  </span>
+                  {isMyTurn && <TimerRing timeLeft={timeLeft} color={timerColor} />}
+                </div>
+                {!amISpectator && (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={handleResign} className="btn" style={{ background: 'rgba(232,76,61,0.15)', color: '#ff6b6b', border: '1px solid #e84c3d', padding: '5px 10px', fontSize: '12px', borderRadius: '4px', cursor: 'pointer' }}>
+                      🏳️ Bỏ cuộc
+                    </button>
+                    <button onClick={handleOfferDraw} className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: '12px', borderRadius: '4px', cursor: 'pointer' }}>
+                      🤝 Xin hòa
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <span style={{ fontSize: '14px', color: 'var(--steam-text-dim)' }}>⏳ Chờ đối thủ vào phòng...</span>
             )}
@@ -304,43 +393,103 @@ const GameRoom = () => {
           )}
         </div>
 
-        {/* Right: Chat */}
+        {/* Right: Sidebar (Chat / Moves) */}
         <div style={{ flex: '1 1 280px', minWidth: '280px', background: 'var(--steam-card-bg)', borderRadius: '4px', border: '1px solid var(--steam-border)', display: 'flex', flexDirection: 'column', height: '620px' }}>
-          <div style={{ padding: '10px 14px', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid var(--steam-border)', fontWeight: 'bold', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            💬 Chat phòng
-            {room.spectators?.length > 0 && (
-              <span style={{ fontSize: '11px', color: 'var(--steam-text-dim)', marginLeft: 'auto' }}>
-                👁 {room.spectators.length} xem
-              </span>
-            )}
+          
+          {/* Tabs header */}
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--steam-border)', background: 'rgba(0,0,0,0.2)' }}>
+            <button onClick={() => setSidebarTab('chat')} style={{ flex: 1, padding: '12px 10px', background: sidebarTab === 'chat' ? 'var(--steam-card-bg)' : 'none', border: 'none', borderBottom: sidebarTab === 'chat' ? '2px solid var(--steam-blue)' : 'none', color: sidebarTab === 'chat' ? 'var(--steam-highlight)' : 'var(--steam-text-dim)', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', outline: 'none' }}>
+              💬 Chat {room.spectators?.length > 0 && `(👁 ${room.spectators.length})`}
+            </button>
+            <button onClick={() => setSidebarTab('moves')} style={{ flex: 1, padding: '12px 10px', background: sidebarTab === 'moves' ? 'var(--steam-card-bg)' : 'none', border: 'none', borderBottom: sidebarTab === 'moves' ? '2px solid var(--steam-blue)' : 'none', color: sidebarTab === 'moves' ? 'var(--steam-highlight)' : 'var(--steam-text-dim)', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', outline: 'none' }}>
+              📜 Nước đi {room.moves?.length > 0 && `(${room.moves.length})`}
+            </button>
           </div>
 
-          <div style={{ flex: 1, padding: '10px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {/* System messages */}
-            <div style={{ fontSize: '11px', color: 'var(--steam-text-dim)', textAlign: 'center', padding: '4px 0' }}>
-              {room.players[0]?.username} (X) vs {room.players[1]?.username || '?'} (O)
-            </div>
-            {(room.messages || []).map((msg, i) => (
-              <div key={i} style={{ fontSize: '13px' }}>
-                <span style={{ color: msg.user === user.username ? 'var(--steam-blue)' : 'var(--steam-orange)', fontWeight: 'bold' }}>
-                  {msg.user}:{' '}
-                </span>
-                <span style={{ color: 'var(--steam-highlight)' }}>{msg.text}</span>
+          {sidebarTab === 'chat' ? (
+            <>
+              <div style={{ flex: 1, padding: '10px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                {/* Players info */}
+                <div style={{ fontSize: '11px', color: 'var(--steam-text-dim)', textAlign: 'center', padding: '4px 0', borderBottom: '1px solid var(--steam-border)', marginBottom: '4px' }}>
+                  {room.players[0]?.username} (X) vs {room.players[1]?.username || '?'} (O)
+                </div>
+                {(room.messages || []).map((msg, i) => (
+                  msg.isSystem
+                    ? (
+                      <div key={i} style={{ textAlign: 'center', fontSize: '11px', fontStyle: 'italic', color: '#f4b942', padding: '2px 6px', background: 'rgba(244,185,66,0.08)', borderRadius: '4px' }}>
+                        {msg.text}
+                      </div>
+                    ) : (
+                      <div key={i} style={{ fontSize: '12px', lineHeight: '1.5' }}>
+                        <span style={{ color: msg.user === user.username ? 'var(--steam-blue)' : 'var(--steam-orange)', fontWeight: 'bold' }}>
+                          {msg.user}:{' '}
+                        </span>
+                        <span style={{ color: 'var(--steam-highlight)' }}>{msg.text}</span>
+                      </div>
+                    )
+                ))}
+                <div ref={chatEndRef} />
               </div>
-            ))}
-            <div ref={chatEndRef} />
-          </div>
 
-          <form onSubmit={handleSendMessage} style={{ display: 'flex', padding: '10px', borderTop: '1px solid var(--steam-border)', gap: '6px' }}>
-            <input
-              type="text"
-              value={chatMessage}
-              onChange={(e) => setChatMessage(e.target.value)}
-              placeholder="Nhập tin nhắn..."
-              style={{ flex: 1, padding: '7px 10px', background: 'var(--steam-darker-bg)', border: '1px solid var(--steam-border)', color: 'var(--steam-highlight)', borderRadius: '3px', outline: 'none', fontSize: '13px' }}
-            />
-            <button type="submit" className="btn btn-primary" style={{ padding: '7px 12px' }}>Gửi</button>
-          </form>
+              {/* Emoji quick-send */}
+              <div style={{ padding: '6px 10px', borderTop: '1px solid var(--steam-border)', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                {QUICK_EMOJIS.map(e => (
+                  <button key={e} onClick={() => handleSendEmoji(e)}
+                    style={{ background: 'none', border: '1px solid var(--steam-border)', borderRadius: '4px', cursor: 'pointer', fontSize: '16px', padding: '2px 5px', transition: 'background 0.15s', lineHeight: 1 }}
+                    onMouseEnter={ev => ev.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                    onMouseLeave={ev => ev.currentTarget.style.background = 'none'}
+                    title={e}>
+                    {e}
+                  </button>
+                ))}
+              </div>
+
+              <form onSubmit={handleSendMessage} style={{ display: 'flex', padding: '8px 10px', borderTop: '1px solid var(--steam-border)', gap: '6px' }}>
+                <input
+                  type="text"
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  placeholder="Nhập tin nhắn..."
+                  maxLength={100}
+                  style={{ flex: 1, padding: '7px 10px', background: 'var(--steam-darker-bg)', border: '1px solid var(--steam-border)', color: 'var(--steam-highlight)', borderRadius: '3px', outline: 'none', fontSize: '12px' }}
+                />
+                <button type="submit" className="btn btn-primary" style={{ padding: '7px 12px', fontSize: '12px' }}>Gửi</button>
+              </form>
+            </>
+          ) : (
+            <div style={{ flex: 1, padding: '12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {(!room.moves || room.moves.length === 0) ? (
+                <div style={{ textAlign: 'center', color: 'var(--steam-text-dim)', fontSize: '12px', marginTop: '20px' }}>
+                  Chưa có nước đi nào.
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr', gap: '8px 12px', fontSize: '12px' }}>
+                  {room.moves.map((mv, idx) => {
+                    const colLetter = String.fromCharCode(65 + mv.col);
+                    const rowNumber = mv.row + 1;
+                    const coordinate = `${colLetter}${rowNumber}`;
+                    const isWinnerCell = room.winningCells?.some(([r, c]) => r === mv.row && c === mv.col);
+                    
+                    return (
+                      <React.Fragment key={idx}>
+                        <div style={{ color: 'var(--steam-text-dim)', fontWeight: 'bold', textAlign: 'right', paddingRight: '8px', borderRight: '1px solid var(--steam-border)' }}>
+                          {idx + 1}.
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ color: mv.symbol === 'X' ? 'var(--steam-blue)' : 'var(--steam-orange)', fontWeight: 'bold' }}>
+                            {mv.symbol} : {coordinate}
+                          </span>
+                          <span style={{ color: isWinnerCell ? 'var(--steam-green-bright)' : 'var(--steam-text-dim)', fontSize: '11px', fontWeight: isWinnerCell ? 'bold' : 'normal' }}>
+                            {mv.username} {isWinnerCell && '🏆'}
+                          </span>
+                        </div>
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
       </div>

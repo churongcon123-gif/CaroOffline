@@ -25,12 +25,18 @@ Chào mừng đến với **CaroOnline**, một ứng dụng web chơi cờ Caro
 - **Phân trang hoàn chỉnh (Pagination)**: Tải danh sách mượt mà với 10 người chơi mỗi trang.
 - **Highlight người dùng**: Tự động định vị và làm nổi bật vị trí xếp hạng của chính bạn trên bảng đấu.
 
-### 👤 Trang cá nhân (Profile)
-- **Avatar & Elo badge**: Thẻ thông tin cá nhân bắt mắt hiển thị thứ hạng của bạn.
-- **Thống kê chi tiết**: Tổng hợp số trận thắng, số trận thua, tỉ lệ phần trăm thắng kèm biểu đồ thanh tỉ lệ xanh/đỏ trực quan.
+### 👤 Trang cá nhân (Profile) & Xem lại ván đấu (Replay Mode)
+- **Profile Page**: Hiển thị Avatar emoji, mức hạng Elo, tổng số trận, số ván thắng/thua/hòa.
+- **Biểu đồ tỉ lệ thắng**: Thanh hiển thị trực quan phần trăm thắng (màu xanh lá) và thua (màu đỏ).
+- **Xem lại ván đấu (Replay Mode)**: Xem lại toàn bộ diễn biến ván đấu đã kết thúc từng nước đi một với các nút điều khiển (First, Prev, Next, Last, Auto Play) và thanh trượt Timeline tiện lợi, tự động highlight ô thắng cuộc.
+
+### ⚙️ Cài đặt & Hệ thống Âm thanh (Sound Effects)
+- **Âm thanh Web Audio API**: Tự tổng hợp âm thanh bằng code trực tiếp, không sử dụng file tĩnh (tránh lỗi 404), phát tiếng đặt cờ gỗ, chat ting, đếm ngược, thắng (fanfare) và thua. Có nút Bật/Tắt trong Settings.
+- **Avatar Selector**: Chọn từ 14 Emoji Avatar siêu dễ thương để làm ảnh đại diện, hiển thị đồng bộ trên Profile và Leaderboard.
+- **Đầu hàng & Xin hòa**: Đang trong trận đấu, người chơi có thể bấm "Bỏ cuộc" (Resign) hoặc gửi đề nghị "Xin hòa" (Offer Draw) trực quan qua socket.
 
 ### 🔔 Hệ thống thông báo (Toasts System)
-- **Thông báo nổi**: Hệ thống Toasts thay thế hoàn toàn cho các hộp thoại `alert()` mặc định của trình duyệt, hiển thị mượt mà ở góc màn hình.
+- **Thông báo nổi**: Hệ thống Toasts thay thế hoàn toàn cho các hộp thoại `alert()` mặc định của trình duyệt, hiển thị mượt mượt ở góc màn hình.
 
 ---
 

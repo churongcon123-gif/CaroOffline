@@ -1,5 +1,7 @@
 const { Server } = require('socket.io');
 const User = require('../models/User');
+const MatchHistory = require('../models/MatchHistory');
+
 
 // ── In-memory stores ──────────────────────────────────────────
 const rooms = new Map();           // roomId → roomObject
@@ -153,6 +155,7 @@ module.exports = (server) => {
         eloChanges: {},
         playerData: [{ username: user.username, elo: user.elo, id: user.id }],
         rematchRequests: [],
+        moves: [],
       };
 
       rooms.set(roomId, newRoom);
@@ -201,6 +204,11 @@ module.exports = (server) => {
         if (room.players.length === 2) {
           room.status = 'playing';
           room.turnStartedAt = Date.now();
+          // System messages
+          room.messages.push({ isSystem: true, text: `⚡ ${user.username} đã tham gia phòng!`, time: new Date().toISOString() });
+          room.messages.push({ isSystem: true, text: `🎮 Ván đấu bắt đầu! ${room.players[0].username} (X) vs ${user.username} (O)`, time: new Date().toISOString() });
+        } else {
+          room.messages.push({ isSystem: true, text: `⚡ ${user.username} đã vào phòng. Chờ đối thủ...`, time: new Date().toISOString() });
         }
       }
 
@@ -237,6 +245,8 @@ module.exports = (server) => {
       const symbol = isPlayer1 ? 'X' : 'O';
 
       room.board[row][col] = symbol;
+      if (!room.moves) room.moves = [];
+      room.moves.push({ row, col, symbol, username: user.username, time: Date.now() });
 
       // ── Server-side win check ──────────────────────────────
       const winCells = checkWinnerServer(room.board, row, col, symbol);
@@ -244,6 +254,8 @@ module.exports = (server) => {
         room.status = 'finished';
         room.winner = user.username;
         room.winningCells = winCells;
+        // System message cho kết thúc game
+        room.messages.push({ isSystem: true, text: `🏆 ${user.username} chiến thắng!`, time: new Date().toISOString() });
 
         // Cập nhật Elo cho cả 2 người chơi
         try {
@@ -260,6 +272,18 @@ module.exports = (server) => {
               [user.username]:  newWinnerElo - winner.elo,
               [loser.username]: newLoserElo  - loser.elo,
             };
+            // Ghi lịch sử trận đấu
+            await MatchHistory.create({
+              winnerId: winner.id,
+              loserId: loser.id,
+              player1Id: room.playerData[0]?.id,
+              player2Id: room.playerData[1]?.id,
+              winnerEloChange: newWinnerElo - winner.elo,
+              loserEloChange: newLoserElo - loser.elo,
+              isDraw: false,
+              moves: room.moves,
+              mode: 'online',
+            });
             // Cập nhật elo trong playerData để rematch dùng đúng
             winner.elo = newWinnerElo;
             loser.elo  = newLoserElo;
@@ -279,19 +303,19 @@ module.exports = (server) => {
       io.to(roomId).emit('room_state_update', room);
     });
 
-    // ── Timeout (client báo hết giờ) ──────────────────────────
-    socket.on('player_timeout', async (data) => {
+    // ── Resign (Đầu hàng) ───────────────────────────────────────
+    socket.on('resign', async (data) => {
       const { roomId, username } = data;
       const room = rooms.get(roomId);
       if (!room || room.status !== 'playing') return;
-      if (room.turn !== username) return; // Chỉ chấp nhận timeout của người đang đi
 
       const opponent = room.players.find(p => p.username !== username);
       if (!opponent) return;
 
       room.status = 'finished';
       room.winner = opponent.username;
-      room.timeoutLoser = username;
+      room.resignLoser = username;
+      room.messages.push({ isSystem: true, text: `🏳️ ${username} đã đầu hàng!`, time: new Date().toISOString() });
 
       // Cập nhật Elo
       try {
@@ -308,11 +332,157 @@ module.exports = (server) => {
             [opponent.username]: newWE - winnerData.elo,
             [username]: newLE - loserData.elo,
           };
+          // Ghi lịch sử trận đấu (resign)
+          await MatchHistory.create({
+            winnerId: winnerData.id,
+            loserId: loserData.id,
+            player1Id: room.playerData[0]?.id,
+            player2Id: room.playerData[1]?.id,
+            winnerEloChange: newWE - winnerData.elo,
+            loserEloChange: newLE - loserData.elo,
+            isDraw: false,
+            moves: room.moves,
+            mode: 'online',
+          });
+          winnerData.elo = newWE;
+          loserData.elo = newLE;
+        }
+      } catch (e) { console.error('Resign elo update error:', e); }
+
+      io.to(roomId).emit('room_state_update', room);
+      io.to('lobby').emit('room_list_update', publicRooms());
+    });
+
+    // ── Timeout (client báo hết giờ) ──────────────────────────
+    socket.on('player_timeout', async (data) => {
+      const { roomId, username } = data;
+      const room = rooms.get(roomId);
+      if (!room || room.status !== 'playing') return;
+      if (room.turn !== username) return; // Chỉ chấp nhận timeout của người đang đi
+
+      const opponent = room.players.find(p => p.username !== username);
+      if (!opponent) return;
+
+      room.status = 'finished';
+      room.winner = opponent.username;
+      room.timeoutLoser = username;
+      room.messages.push({ isSystem: true, text: `⏰ ${username} đã hết thời gian lượt đi!`, time: new Date().toISOString() });
+
+      // Cập nhật Elo
+      try {
+        const winnerData = room.playerData?.find(p => p.username === opponent.username);
+        const loserData  = room.playerData?.find(p => p.username === username);
+        if (winnerData && loserData) {
+          const K = (elo) => elo < 2100 ? 32 : 16;
+          const expected = (a, b) => 1 / (1 + Math.pow(10, (b - a) / 400));
+          const newWE = Math.max(100, Math.round(winnerData.elo + K(winnerData.elo) * (1 - expected(winnerData.elo, loserData.elo))));
+          const newLE = Math.max(100, Math.round(loserData.elo  + K(loserData.elo)  * (0 - expected(loserData.elo, winnerData.elo))));
+          await User.updateEloAndStats(winnerData.id, newWE, true);
+          await User.updateEloAndStats(loserData.id,  newLE, false);
+          room.eloChanges = {
+            [opponent.username]: newWE - winnerData.elo,
+            [username]: newLE - loserData.elo,
+          };
+          // Ghi lịch sử trận đấu (timeout)
+          await MatchHistory.create({
+            winnerId: winnerData.id,
+            loserId: loserData.id,
+            player1Id: room.playerData[0]?.id,
+            player2Id: room.playerData[1]?.id,
+            winnerEloChange: newWE - winnerData.elo,
+            loserEloChange: newLE - loserData.elo,
+            isDraw: false,
+            moves: room.moves,
+            mode: 'online',
+          });
+          winnerData.elo = newWE;
+          loserData.elo = newLE;
         }
       } catch (e) { console.error('Timeout elo update error:', e); }
 
       io.to(roomId).emit('room_state_update', room);
       io.to('lobby').emit('room_list_update', publicRooms());
+    });
+
+    // ── Offer Draw (Xin hòa) ──────────────────────────────────
+    socket.on('offer_draw', (data) => {
+      const { roomId, username } = data;
+      const room = rooms.get(roomId);
+      if (!room || room.status !== 'playing') return;
+
+      const opponent = room.players.find(p => p.username !== username);
+      if (!opponent) return;
+
+      // Tìm socketId của đối thủ để gửi draw_offered
+      for (const [sid, info] of socketToUser.entries()) {
+        if (info.username === opponent.username && info.roomId === roomId) {
+          io.to(sid).emit('draw_offered', { sender: username });
+          break;
+        }
+      }
+    });
+
+    socket.on('draw_response', async (data) => {
+      const { roomId, username, accepted } = data;
+      const room = rooms.get(roomId);
+      if (!room || room.status !== 'playing') return;
+
+      const opponent = room.players.find(p => p.username !== username);
+      if (!opponent) return;
+
+      if (accepted) {
+        room.status = 'finished';
+        room.winner = null; // Hòa
+        room.isDraw = true;
+        room.messages.push({ isSystem: true, text: `🤝 Trận đấu kết thúc hòa do đồng thuận!`, time: new Date().toISOString() });
+
+        // Tính Elo hòa
+        try {
+          const p1 = room.playerData?.[0];
+          const p2 = room.playerData?.[1];
+          if (p1 && p2) {
+            const K = (elo) => elo < 2100 ? 32 : 16;
+            const expected = (a, b) => 1 / (1 + Math.pow(10, (b - a) / 400));
+            const newElo1 = Math.max(100, Math.round(p1.elo + K(p1.elo) * (0.5 - expected(p1.elo, p2.elo))));
+            const newElo2 = Math.max(100, Math.round(p2.elo + K(p2.elo) * (0.5 - expected(p2.elo, p1.elo))));
+
+            await User.updateEloAndStats(p1.id, newElo1, 'draw');
+            await User.updateEloAndStats(p2.id, newElo2, 'draw');
+
+            room.eloChanges = {
+              [p1.username]: newElo1 - p1.elo,
+              [p2.username]: newElo2 - p2.elo,
+            };
+
+            // Ghi MatchHistory
+            await MatchHistory.create({
+              winnerId: null,
+              loserId: null,
+              player1Id: p1.id,
+              player2Id: p2.id,
+              winnerEloChange: newElo1 - p1.elo,
+              loserEloChange: newElo2 - p2.elo,
+              isDraw: true,
+              moves: room.moves,
+              mode: 'online',
+            });
+
+            p1.elo = newElo1;
+            p2.elo = newElo2;
+          }
+        } catch (e) { console.error('Draw Elo error:', e); }
+
+        io.to(roomId).emit('room_state_update', room);
+        io.to('lobby').emit('room_list_update', publicRooms());
+      } else {
+        // Gửi thông báo từ chối hòa về cho đối thủ
+        for (const [sid, info] of socketToUser.entries()) {
+          if (info.username === opponent.username && info.roomId === roomId) {
+            io.to(sid).emit('draw_declined', { decliner: username });
+            break;
+          }
+        }
+      }
     });
 
     // ── Rematch ────────────────────────────────────────────────
@@ -341,6 +511,8 @@ module.exports = (server) => {
         room.eloChanges = {};
         room.rematchRequests = [];
         room.timeoutLoser = null;
+        room.moves = [];
+        room.isDraw = false;
         io.to(roomId).emit('room_state_update', room);
         io.to('lobby').emit('room_list_update', publicRooms());
       }
