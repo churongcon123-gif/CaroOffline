@@ -244,6 +244,7 @@ module.exports = (server) => {
       const isPlayer1 = room.players[0].username === user.username;
       const symbol = isPlayer1 ? 'X' : 'O';
 
+      // [Sequence Step 2]: Server nhận tọa độ nước đi, cập nhật board và kiểm tra thắng 5 quân
       room.board[row][col] = symbol;
       if (!room.moves) room.moves = [];
       room.moves.push({ row, col, symbol, username: user.username, time: Date.now() });
@@ -257,7 +258,7 @@ module.exports = (server) => {
         // System message cho kết thúc game
         room.messages.push({ isSystem: true, text: `🏆 ${user.username} chiến thắng!`, time: new Date().toISOString() });
 
-        // Cập nhật Elo cho cả 2 người chơi
+        // [Sequence Step 3]: Tính toán điểm Elo mới cho 2 người chơi
         try {
           const winner = room.playerData?.find(p => p.username === user.username);
           const loser  = room.playerData?.find(p => p.username !== user.username);
@@ -266,13 +267,16 @@ module.exports = (server) => {
             const expected = (a, b) => 1 / (1 + Math.pow(10, (b - a) / 400));
             const newWinnerElo = Math.max(100, Math.round(winner.elo + K(winner.elo) * (1 - expected(winner.elo, loser.elo))));
             const newLoserElo  = Math.max(100, Math.round(loser.elo  + K(loser.elo)  * (0 - expected(loser.elo,  winner.elo))));
+            
+            // [Sequence Step 4]: Gọi User model cập nhật Elo mới vào DB
             await User.updateEloAndStats(winner.id, newWinnerElo, true);
             await User.updateEloAndStats(loser.id,  newLoserElo,  false);
             room.eloChanges = {
               [user.username]:  newWinnerElo - winner.elo,
               [loser.username]: newLoserElo  - loser.elo,
             };
-            // Ghi lịch sử trận đấu
+            
+            // [Sequence Step 5]: Ghi thông tin ván đấu và danh sách nước đi (moves) vào lịch sử
             await MatchHistory.create({
               winnerId: winner.id,
               loserId: loser.id,
@@ -290,6 +294,7 @@ module.exports = (server) => {
           }
         } catch (e) { console.error('Elo update error:', e); }
 
+        // [Sequence Step 6]: Gửi (emit) trạng thái phòng mới và kết quả Elo về cho 2 client
         io.to(roomId).emit('room_state_update', room);
         io.to('lobby').emit('room_list_update', publicRooms());
         return;

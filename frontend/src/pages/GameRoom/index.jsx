@@ -108,6 +108,7 @@ const GameRoom = () => {
         const myEloChange = roomState.eloChanges?.[user.username];
         if (myEloChange !== undefined) {
           eloUpdatedRef.current = true;
+          // [Sequence Step 7]: Cập nhật điểm Elo mới vào AuthStore và hiển thị lên giao diện
           updateUserElo({
             ...user,
             elo: (user.elo || 1200) + myEloChange,
@@ -228,6 +229,7 @@ const GameRoom = () => {
   const handleCellClick = (row, col) => {
     if (!room || room.status !== 'playing' || room.turn !== user.username) return;
     if (room.board[row][col] !== null) return;
+    // [Sequence Step 1]: Client gửi event make_move lên server
     socket.emit('make_move', { roomId: id, row, col, user });
   };
 
