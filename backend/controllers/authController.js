@@ -101,5 +101,45 @@ const getProfile = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getProfile };
+const changePassword = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const token = authHeader.split(' ')[1];
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Vui lòng cung cấp mật khẩu hiện tại và mật khẩu mới' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Mật khẩu mới phải ít nhất 6 ký tự' });
+    }
+
+    const user = await User.findByUsername(decoded.username);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Mật khẩu hiện tại không đúng' });
+    }
+
+    const hashedNew = await bcrypt.hash(newPassword, 10);
+    await require('../models/User').updatePassword(user.id, hashedNew);
+
+    res.json({ message: 'Đổi mật khẩu thành công!' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+module.exports = { register, login, getProfile, changePassword };
 

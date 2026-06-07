@@ -87,6 +87,15 @@ class User {
     ]);
     return rows[0];
   }
+
+  /**
+   * Cập nhật mật khẩu người dùng.
+   */
+  static async updatePassword(userId, hashedPassword) {
+    const query = 'UPDATE users SET password = $1 WHERE id = $2 RETURNING id';
+    const { rows } = await db.query(query, [hashedPassword, userId]);
+    return rows[0];
+  }
 }
 
 module.exports = User;
