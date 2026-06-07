@@ -80,6 +80,7 @@ const GameRoom = () => {
   const [myRematchSent, setMyRematchSent] = useState(false);
   const chatEndRef = useRef(null);
   const timerIdRef = useRef(null);
+  const [drawOfferSender, setDrawOfferSender] = useState(null); // Tên người gửi đề xuất hòa
   const eloUpdatedRef = useRef(false); // chống update elo 2 lần
 
   // ── Socket setup ──────────────────────────────────────────────
@@ -121,11 +122,21 @@ const GameRoom = () => {
       navigate('/lobby');
     });
 
+    socket.on('draw_offered', ({ sender }) => {
+      setDrawOfferSender(sender);
+    });
+
+    socket.on('draw_declined', ({ decliner }) => {
+      addToast(`${decliner} đã từ chối lời đề nghị hòa!`, 'info');
+    });
+
     return () => {
       socket.off('room_state_update');
       socket.off('receive_message');
       socket.off('rematch_update');
       socket.off('join_room_error');
+      socket.off('draw_offered');
+      socket.off('draw_declined');
     };
   }, [user, navigate, id, updateUserElo]);
 
@@ -172,6 +183,18 @@ const GameRoom = () => {
     }
   };
 
+  const handleOfferDraw = () => {
+    if (window.confirm('Bạn muốn gửi đề nghị hòa tới đối thủ?')) {
+      socket.emit('offer_draw', { roomId: id, username: user.username });
+      addToast('Đã gửi đề nghị hòa tới đối thủ.', 'info');
+    }
+  };
+
+  const handleDrawResponse = (accepted) => {
+    socket.emit('draw_response', { roomId: id, username: user.username, accepted });
+    setDrawOfferSender(null);
+  };
+
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!chatMessage.trim()) return;
@@ -215,6 +238,25 @@ const GameRoom = () => {
   return (
     <div className="container fade-in" style={{ padding: '20px 16px' }}>
       {over && room.winner === user.username && <Confetti />}
+
+      {drawOfferSender && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div style={{ background: 'var(--steam-card-bg)', border: '1px solid var(--steam-border)', padding: '24px', borderRadius: '4px', maxWidth: '320px', width: '100%', textAlign: 'center' }}>
+            <h3 style={{ color: 'var(--steam-highlight)', marginTop: 0 }}>🤝 Đề nghị hòa</h3>
+            <p style={{ color: 'var(--steam-text-dim)', fontSize: '13px', lineHeight: '1.5' }}>
+              Đối thủ <strong>{drawOfferSender}</strong> đề nghị hòa ván đấu này. Bạn có đồng ý không?
+            </p>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+              <button onClick={() => handleDrawResponse(true)} className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}>
+                Đồng ý
+              </button>
+              <button onClick={() => handleDrawResponse(false)} className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>
+                Từ chối
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', background: 'var(--steam-card-bg)', padding: '12px 20px', borderRadius: '4px', border: '1px solid var(--steam-border)' }}>
@@ -279,7 +321,10 @@ const GameRoom = () => {
                 {!amISpectator && (
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button onClick={handleResign} className="btn" style={{ background: 'rgba(232,76,61,0.15)', color: '#ff6b6b', border: '1px solid #e84c3d', padding: '5px 10px', fontSize: '12px', borderRadius: '4px', cursor: 'pointer' }}>
-                      🏳️ Đầu hàng
+                      🏳️ Bỏ cuộc
+                    </button>
+                    <button onClick={handleOfferDraw} className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: '12px', borderRadius: '4px', cursor: 'pointer' }}>
+                      🤝 Xin hòa
                     </button>
                   </div>
                 )}

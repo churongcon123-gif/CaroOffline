@@ -69,7 +69,14 @@ class User {
    * @param {boolean} won    - true nếu người chơi thắng
    * @returns {Object} User object đã cập nhật
    */
-  static async updateEloAndStats(userId, newElo, won) {
+  static async updateEloAndStats(userId, newElo, result) {
+    let winsInc = 0;
+    let lossesInc = 0;
+    if (result === 'win' || result === true) {
+      winsInc = 1;
+    } else if (result === 'loss' || result === false) {
+      lossesInc = 1;
+    }
     const query = `
       UPDATE users
       SET elo            = $1,
@@ -81,8 +88,8 @@ class User {
     `;
     const { rows } = await db.query(query, [
       newElo,
-      won ? 1 : 0, // $2: tăng wins nếu thắng
-      won ? 0 : 1, // $3: tăng losses nếu thua
+      winsInc,
+      lossesInc,
       userId
     ]);
     return rows[0];
