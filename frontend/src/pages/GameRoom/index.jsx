@@ -166,6 +166,12 @@ const GameRoom = () => {
     navigate('/lobby');
   };
 
+  const handleResign = () => {
+    if (window.confirm('Bạn có chắc chắn muốn đầu hàng ván đấu này?')) {
+      socket.emit('resign', { roomId: id, username: user.username });
+    }
+  };
+
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!chatMessage.trim()) return;
@@ -263,12 +269,21 @@ const GameRoom = () => {
                 {room.disconnectWin && <span style={{ fontSize: '12px', color: 'var(--steam-text-dim)' }}>(đối thủ bỏ cuộc)</span>}
               </div>
             ) : room.status === 'playing' ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '15px', fontWeight: 'bold', color: isMyTurn ? 'var(--steam-green-bright)' : 'var(--steam-text-dim)' }}>
-                  {isMyTurn ? '✨ Lượt của bạn!' : `⏳ Chờ ${room.turn}...`}
-                </span>
-                {isMyTurn && <TimerRing timeLeft={timeLeft} color={timerColor} />}
-              </div>
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '15px', fontWeight: 'bold', color: isMyTurn ? 'var(--steam-green-bright)' : 'var(--steam-text-dim)' }}>
+                    {isMyTurn ? '✨ Lượt của bạn!' : `⏳ Chờ ${room.turn}...`}
+                  </span>
+                  {isMyTurn && <TimerRing timeLeft={timeLeft} color={timerColor} />}
+                </div>
+                {!amISpectator && (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={handleResign} className="btn" style={{ background: 'rgba(232,76,61,0.15)', color: '#ff6b6b', border: '1px solid #e84c3d', padding: '5px 10px', fontSize: '12px', borderRadius: '4px', cursor: 'pointer' }}>
+                      🏳️ Đầu hàng
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <span style={{ fontSize: '14px', color: 'var(--steam-text-dim)' }}>⏳ Chờ đối thủ vào phòng...</span>
             )}

@@ -295,6 +295,52 @@ module.exports = (server) => {
       io.to(roomId).emit('room_state_update', room);
     });
 
+    // ── Resign (Đầu hàng) ───────────────────────────────────────
+    socket.on('resign', async (data) => {
+      const { roomId, username } = data;
+      const room = rooms.get(roomId);
+      if (!room || room.status !== 'playing') return;
+
+      const opponent = room.players.find(p => p.username !== username);
+      if (!opponent) return;
+
+      room.status = 'finished';
+      room.winner = opponent.username;
+      room.resignLoser = username;
+      room.messages.push({ isSystem: true, text: `🏳️ ${username} đã đầu hàng!`, time: new Date().toISOString() });
+
+      // Cập nhật Elo
+      try {
+        const winnerData = room.playerData?.find(p => p.username === opponent.username);
+        const loserData  = room.playerData?.find(p => p.username === username);
+        if (winnerData && loserData) {
+          const K = (elo) => elo < 2100 ? 32 : 16;
+          const expected = (a, b) => 1 / (1 + Math.pow(10, (b - a) / 400));
+          const newWE = Math.max(100, Math.round(winnerData.elo + K(winnerData.elo) * (1 - expected(winnerData.elo, loserData.elo))));
+          const newLE = Math.max(100, Math.round(loserData.elo  + K(loserData.elo)  * (0 - expected(loserData.elo, winnerData.elo))));
+          await User.updateEloAndStats(winnerData.id, newWE, true);
+          await User.updateEloAndStats(loserData.id,  newLE, false);
+          room.eloChanges = {
+            [opponent.username]: newWE - winnerData.elo,
+            [username]: newLE - loserData.elo,
+          };
+          // Ghi lịch sử trận đấu (resign)
+          await MatchHistory.create({
+            winnerId: winnerData.id,
+            loserId: loserData.id,
+            winnerEloChange: newWE - winnerData.elo,
+            loserEloChange: newLE - loserData.elo,
+            mode: 'online',
+          });
+          winnerData.elo = newWE;
+          loserData.elo = newLE;
+        }
+      } catch (e) { console.error('Resign elo update error:', e); }
+
+      io.to(roomId).emit('room_state_update', room);
+      io.to('lobby').emit('room_list_update', publicRooms());
+    });
+
     // ── Timeout (client báo hết giờ) ──────────────────────────
     socket.on('player_timeout', async (data) => {
       const { roomId, username } = data;
