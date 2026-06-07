@@ -27,6 +27,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/game', require('./routes/gameRoutes'));
 app.use('/api/leaderboard', require('./routes/leaderboardRoutes'));
+app.use('/api/history', require('./routes/historyRoutes'));
 // app.use('/api/rooms', require('./routes/roomRoutes'));
 // app.use('/api/matches', require('./routes/matchRoutes'));
 
