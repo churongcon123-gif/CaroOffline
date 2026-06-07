@@ -10,6 +10,7 @@ import Leaderboard from './pages/Leaderboard';
 import Lobby from './pages/Lobby';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
+import NotFound from './pages/NotFound';
 import useAuthStore from './states/authStore';
 import { ToastContainer } from './components/Toast';
 
@@ -70,6 +71,7 @@ const App = () => {
           <Route path="/play-ai" element={<PlayVsAI />} />
           <Route path="/play-local" element={<PlayLocal />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
     </div>
